@@ -51,6 +51,7 @@
 	--ats-color-brown-wood-medium: #66553B;
 	--ats-color-brown-wood-dark: #2A261F;
 	--ats-color-brown-wood-shadow: #211E19;
+	--ats-color-brown-divider: #4f3c21; /* CHEATSHEET: this site's panel border and divider color */
 
 	/*REDS*/
 	--ats-color-red-penalty-text: #f62800;
@@ -138,7 +139,7 @@ body {
 }
 
 hr {
-	border: 1px solid #4f3c21;
+	border: 1px solid var(--ats-color-brown-divider);
 }
 
 .tabs {
@@ -468,7 +469,7 @@ button.flawless-toggle-active {
 }
 
 .header-row {
-    border-bottom: solid 4px #4f3c21;
+    border-bottom: solid 4px var(--ats-color-brown-divider);
     margin-bottom: 5px;
     justify-content: center;
 }
@@ -623,6 +624,71 @@ td:has(> div.ats-building-icon) {
     flex-wrap: wrap;
 }
 
+/*
+ * Species Needs grid sizing. Each mode sets the same named sizes; the rules below only use the names.
+ *   desktop       (default)
+ *   phone         (max-width: 767px)  all 7 columns fit on a 360px-wide screen
+ *   narrow phone  (max-width: 359px)  all 7 columns still fit down to 320px
+ * --columns (the longest row) is set by NEEDS_GRID_COLUMNS in index.html.
+ */
+.needs-grid {
+    --icon-size: 50px;
+    --icon-padding: 10px;
+    --icon-gap: 5px;
+    --ring-margin: 2px;
+    --ring-t: 4px;    /* species ring thickness */
+    --panel-padding: 12px;
+    /* One icon cell: image, padding and species-ring margin on both sides, plus the gap around it */
+    --icon-cell: calc(var(--icon-size) + 2 * var(--icon-padding) + 2 * var(--ring-margin) + 2 * var(--icon-gap));
+}
+
+@media only screen and (max-width: 767px) {    /* phone */
+    .needs-grid {
+        --icon-size: 25px;
+        --icon-padding: 4px;
+        --icon-gap: 2px;
+        --ring-t: 3px;
+        --panel-padding: 6px;
+    }
+}
+
+@media only screen and (max-width: 359px) {    /* narrow phone */
+    .needs-grid {
+        --icon-padding: 2px;
+        --icon-gap: 1px;
+    }
+}
+
+div.ats-container.needs-grid {
+    max-width: calc(var(--columns) * var(--icon-cell));
+    padding: 0 var(--panel-padding);
+}
+
+.needs-grid .icon {
+    margin: var(--icon-gap);
+    padding: var(--icon-padding);
+    transition: opacity 0.12s ease;    /* smooths the hover preview dimming */
+}
+
+.needs-grid .icon img {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+
+/* Keep each full row (species, Complex Foods) on one line */
+.needs-grid .icon-row {
+    flex-wrap: nowrap;
+}
+
+/* Thin divider between need groups (Complex Foods, Clothing, Services) */
+.need-group {
+    justify-content: center;
+}
+
+.need-group + .need-group {
+    border-top: 1px solid var(--ats-color-brown-divider);
+}
+
 .icon {
     display: flex;
     align-items: center;
@@ -684,11 +750,17 @@ td:has(> div.ats-building-icon) {
  * Drawn at the icon's edge, inside its brown frame, with a 1px black outline so it stands
  * out against busy icon art. The parts and colors come from speciesRingStyle() in index.html.
  */
-.species-ring {
+
+/* Default ring thickness for rings outside the Species Needs grid. It is set on the page root, not on
+   .species-ring, so the value .needs-grid sets for each screen mode still reaches its rings. */
+:root {
 	--ring-t: 4px;
+}
+
+.species-ring {
 	position: relative;
 	display: inline-flex;
-	margin: 0 2px;
+	margin: 0 var(--ring-margin, 2px);
 }
 
 .icon-row .ats-single-ingredient-icon .species-ring img {
@@ -725,12 +797,6 @@ td:has(> div.ats-building-icon) {
 	background-image: var(--ring-bk-img);
 	background-size: var(--ring-bk-size);
 	background-position: var(--ring-pos);
-}
-
-@media only screen and (max-width: 767px) {
-	.species-ring {
-		--ring-t: 3px;
-	}
 }
 
 /* Sacred Grove warning, shown when exactly 4 species are selected */
@@ -789,7 +855,7 @@ td:has(> div.ats-building-icon) {
 
 h1.firstHeading {
     margin: 0.25em 0 0.5em;
-    border-bottom: solid 4px #4f3c21;
+    border-bottom: solid 4px var(--ats-color-brown-divider);
 }
 
 h1.mw-first-heading {
