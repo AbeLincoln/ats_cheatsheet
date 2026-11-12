@@ -65,7 +65,13 @@
             // Parse the json string from the goods.json file that we loaded in the html head section
             const GOODS = JSON.parse(goods_data);
 			const BUILDINGS = JSON.parse(buildings_data);
-            const NEEDS = ['Porridge', 'Biscuits', 'Pie', 'Pickled Goods', 'Jerky', 'Skewers', 'Coats', 'Leisure', 'Religion', 'Education', 'Luxury', 'Brawling', 'Treatment', 'Boots', 'Paste']
+            // Grouped and ordered like the wiki's Complex Needs table (housing is not shown here)
+            const NEED_GROUPS = [
+                { name: 'Complex Foods', needs: ['Jerky', 'Porridge', 'Skewers', 'Biscuits', 'Pie', 'Pickled Goods', 'Paste'] },
+                { name: 'Clothing', needs: ['Coats', 'Boots'] },
+                { name: 'Services', needs: ['Leisure', 'Brawling', 'Religion', 'Education', 'Luxury', 'Treatment'] },
+            ];
+            const NEEDS = NEED_GROUPS.flatMap(group => group.needs);
 			const NEEDTRANS = {'Treatment': 'Tea', 'Leisure': 'Ale', 'Luxury': 'Wine', 'Brawling': 'Training Gear', 'Religion': 'Incense', 'Education': 'Scrolls'}
             const SPECIES = {
                 'Human': ['Porridge', 'Biscuits', 'Pie', 'Coats', 'Leisure', 'Religion'],
@@ -392,7 +398,10 @@
             };
 
             // Needs
-            const NeedsGrid = ({ rows, columns }) => {
+            // The panel is as wide as its longest row, whether that is the species or a need group
+            const NEEDS_GRID_COLUMNS = Math.max(Object.keys(SPECIES).length, ...NEED_GROUPS.map(group => group.needs.length));
+
+            const NeedsGrid = () => {
 				const savedNeedsState = loadSavedState();
 				const savedSpecies = savedNeedsState.species;
 				const initialActiveSpecies = Array.isArray(savedSpecies)
@@ -477,71 +486,54 @@
                     return highlightedSet.flat().includes(iconName) || activeSpecies.includes(iconName);
                 };
 
-                // Generate grid layout from the SPECIES keys
-                const speciesNames = Object.keys(SPECIES);
-                const grid_header = [];
-                const grid = [];
-                let index = 0;
-
-                for (let i = 0; i < rows; i++) {
-                    const row = [];
-                    if (i == 0) {
-                        for (let j = 0; j < columns && index < speciesNames.length; j++) {
-                            row.push(speciesNames[index]);
-                            index++;
-                        }
-                        index = 0;
-                        grid_header.push(row);
-                    } else {
-                        for (let j = 0; j < columns && index < NEEDS.length; j++) {
-                            row.push(NEEDS[index]);
-                            index++;
-                        }
-                        grid.push(row);
+                // Hover preview: pointing at a species dims the needs it doesn't have, and pointing at a
+                // need dims the species that don't want it. Mouse only, so a tap on a phone doesn't leave it stuck.
+                const [hoveredIcon, setHoveredIcon] = useState(null);
+                const hoverHandlers = (iconName) => ({
+                    onPointerEnter: (e) => { if (e.pointerType === 'mouse') setHoveredIcon(iconName); },
+                    onPointerLeave: () => setHoveredIcon(null),
+                });
+                const isIconShown = (iconName) => {
+                    if (iconName === hoveredIcon) return true;
+                    if (hoveredIcon && (hoveredIcon in SPECIES) !== (iconName in SPECIES)) {
+                        return iconName in SPECIES ? wants(iconName, hoveredIcon) : wants(hoveredIcon, iconName);
                     }
-                }
+                    return isIconHighlighted(iconName);
+                };
+
+                // One icon, species or need. Species keep an id: the Best Buildings tab clicks them by id.
+                // getSharedNeedClass is always empty for a species, since only that species wants itself.
+                const renderIcon = (iconName) => (
+                    <div
+                    key={iconName}
+                    className={`ats-single-ingredient-icon icon${isIconShown(iconName) ? '' : ' icon-inactive'}${getSharedNeedClass(iconName)}`}
+                    id={iconName in SPECIES ? iconName : undefined}
+                    onClick={() => { setHoveredIcon(null); handleIconClick(iconName); }}
+                    {...hoverHandlers(iconName)}
+                    style={{ borderTop: '5px solid transparent' }}
+                    >
+                        <SpeciesRing style={getRingStyle(iconName)}>
+                            <img src={SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
+                        </SpeciesRing>
+                    </div>
+                );
 
                 return (
-                    <div className="ats-container icon-grid" style={{maxWidth: '590px'}}>
+                    <div className="ats-container icon-grid needs-grid" style={{ '--columns': NEEDS_GRID_COLUMNS }}>
                         <div className="grid-header ats-infobox-header-title">
                             {"Species Needs"}
                             <SacredGroveWarning count={activeSpecies ? activeSpecies.length : 0} />
                         </div>
                         <div className="icon-grid-wrapper">
-                            {grid_header.map((row, rowIndex) => (
-                                <div key={rowIndex} className={`icon-row${ rowIndex == 0 ? ' header-row' : '' }`}>
-                                {row.map((iconName) => (
-                                    <div
-                                    key={iconName}
-                                    className={`ats-single-ingredient-icon icon${isIconHighlighted(iconName) ? '' : ' icon-inactive'}`}
-									id={iconName}
-                                    onClick={() => handleIconClick(iconName)}
-                                    style={{ borderTop: '5px solid transparent' }}
-                                    >
-                                        <SpeciesRing style={getRingStyle(iconName)}>
-                                            <img src={SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
-                                        </SpeciesRing>
-                                    </div>
-                                ))}
+                            <div className="icon-row header-row">
+                                {Object.keys(SPECIES).map(renderIcon)}
+                            </div>
+
+                            {NEED_GROUPS.map(group => (
+                                <div key={group.name} className='icon-row need-group' role='group' aria-label={group.name}>
+                                    {group.needs.map(renderIcon)}
                                 </div>
                             ))}
-
-                            <div className='icon-row'>
-                                {grid.map((row, rowIndex) => (
-                                    row.map((iconName) => (
-                                        <div
-                                        key={iconName}
-                                        className={`ats-single-ingredient-icon icon${isIconHighlighted(iconName) ? '' : ' icon-inactive'}${getSharedNeedClass(iconName)}`}
-                                        onClick={() => handleIconClick(iconName)}
-                                        style={{ borderTop: '5px solid transparent' }}
-                                        >
-                                            <SpeciesRing style={getRingStyle(iconName)}>
-                                                <img src={SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
-                                            </SpeciesRing>
-                                        </div>
-                                    ))
-                                ))}
-                            </div>
 
                         </div>
                     </div>
@@ -748,7 +740,7 @@
 			const DraggableContainer = () => {
 				const [items, setItems] = useState([
 					{ id: "ingredients", content: <IngredientGrid rows={9} columns={8} /> },
-					{ id: "needs", content: <NeedsGrid rows={4} columns={7} /> },
+					{ id: "needs", content: <NeedsGrid /> },
 				]);
 
 				const [direction, setDirection] = useState("horizontal");
@@ -1083,7 +1075,9 @@
 					if (lookOutA !== lookOutB) return lookOutA - lookOutB;
 					const speciesA = (overlappingNeeds[a] || []).length;
 					const speciesB = (overlappingNeeds[b] || []).length;
-					return speciesB - speciesA;
+					if (speciesA !== speciesB) return speciesB - speciesA;
+					// Final tie-break: the wiki order from NEED_GROUPS, so ties don't depend on sort stability
+					return NEEDS.indexOf(a) - NEEDS.indexOf(b);
 				});
 			};
 
