@@ -247,6 +247,34 @@
                 return lines.join('\n');
             };
 
+            // Category and building order from the wiki's List of Buildings.
+            // https://wiki.hoodedhorse.com/Against_the_Storm/Buildings
+            // The Mine is listed under Resource Gathering, and the Blight Post under City Buildings before the services.
+            const CATEGORY_ORDER = ['Resource Gathering', 'Extraction Building', 'Food Production', 'Industry', 'Special Building', 'City Buildings'];
+            const BUILDING_ORDER = [
+                "Woodcutters' Camp", "Stonecutters' Camp", "Harvesters' Camp", "Small Foragers' Camp", "Foragers' Camp",
+                "Small Herbalists' Camp", "Herbalists' Camp", "Small Trappers' Camp", "Trappers' Camp", 'Small Fishing Hut',
+                'Fishing Hut', 'Clay Pit', "Forester's Hut", 'Geyser Pump', 'Rain Collector', 'Advanced Rain Collector', 'Mine',
+                'Small Farm', 'Hallowed Small Farm', 'Plantation', 'Herb Garden', 'Hallowed Herb Garden', 'Brineworks',
+                'Greenhouse', 'Ranch', 'Field Kitchen', 'Bakery', 'Cookhouse', 'Smokehouse', 'Butcher', 'Beanery', 'Cellar',
+                'Flawless Cellar', 'Cannery', 'Granary', 'Grill', 'Rain Mill', 'Flawless Rain Mill', 'Pantry', 'Apothecary',
+                'Furnace', 'Homestead',
+                'Crude Workstation', 'Makeshift Post', 'Workshop', 'Lumber Mill', 'Cooperage', 'Flawless Cooperage', 'Carpenter',
+                'Cobbler', 'Weaver', 'Clothier', 'Leatherworker', 'Flawless Leatherworker', 'Brick Oven', 'Brickyard', 'Kiln',
+                'Press', 'Provisioner', 'Stamping Mill', 'Smelter', 'Flawless Smelter', 'Smithy', 'Toolshop', 'Artisan',
+                "Alchemist's Hut", 'Teahouse', 'Brewery', 'Flawless Brewery', 'Distillery', 'Tinctury', "Druid's Hut",
+                "Flawless Druid's Hut", 'Tinkerer', 'Manufactory', 'Supplier', 'Scribe', 'Rainpunk Foundry', 'Finesmith',
+                'Blight Post',
+                'Tavern', 'Temple', 'Holy Temple', 'Monastery', 'Clan Hall', 'Forum', 'Guild House', 'Holy Guild House',
+                'Market', 'Holy Market', 'Tea Doctor', 'Bath House', 'Feast Hall', 'Academy',
+            ];
+            // Anything not listed (e.g. a newly added building) goes after the listed ones, alphabetically
+            const listOrder = (list, name) => list.includes(name) ? list.indexOf(name) : list.length;
+            const compareWikiOrder = (a, b) =>
+                listOrder(CATEGORY_ORDER, a.category) - listOrder(CATEGORY_ORDER, b.category)
+                || listOrder(BUILDING_ORDER, a.building) - listOrder(BUILDING_ORDER, b.building)
+                || a.building.localeCompare(b.building);
+
             // --- Building table data, built once and shared ---
             const buildFormattedBuildings = () => {
                 const formattedBuildings = [];
@@ -286,7 +314,13 @@
                         comfortTags: BUILDINGS[building].comfortTags || [],
                     });
                 }
-                return { formattedBuildings, per_cat };
+                formattedBuildings.sort(compareWikiOrder);
+                // Category filter buttons follow the same order
+                const orderedPerCat = {};
+                for (const category of Object.keys(per_cat).sort((a, b) => listOrder(CATEGORY_ORDER, a) - listOrder(CATEGORY_ORDER, b) || a.localeCompare(b))) {
+                    orderedPerCat[category] = per_cat[category];
+                }
+                return { formattedBuildings, per_cat: orderedPerCat };
             };
             const { formattedBuildings: FORMATTED_BUILDINGS, per_cat: PER_CAT } = buildFormattedBuildings();
 
@@ -594,6 +628,7 @@
 
 				const sortedData = [...data].sort((a, b) => {
 					if (!sortKey || sortDirection === null) return 0; // Check for null sortDirection
+					if (sortKey === 'category') return compareWikiOrder(a, b);
 
 					const aValue = a[sortKey];
 					const bValue = b[sortKey];
