@@ -866,23 +866,14 @@
 					document.getElementById(iconName).click();
                 };
 
-                // Generate grid layout from the SPECIES keys
-                const needsNames = Object.keys(overlappingNeeds);
-
+				// One row per need, grouped and ordered like the Species Needs grid
 				const speciesNames = Object.keys(SPECIES);
 				const headerRow = ["None", ...speciesNames];
-				const grid = [];
-                for (let i = 0; i < needsNames.length; i++) {
-                    const row = [needsNames[i]];
-					for (let j = 0; j < speciesNames.length; j++) {
-						if (overlappingNeeds[needsNames[i]].indexOf(speciesNames[j]) >= 0) {
-							row.push(speciesNames[j]);
-						} else {
-							row.push("None");
-						}
-					}
-					grid.push(row);
-                }
+				const groups = NEED_GROUPS.map(group => ({
+					name: group.name,
+					rows: group.needs.filter(need => need in overlappingNeeds).map(need =>
+						[need, ...speciesNames.map(species => overlappingNeeds[need].includes(species) ? species : "None")]),
+				}));
 				return (
 				  <div className="ats-container icon-grid overlap-grid" style={{ minWidth: '740px', maxWidth: '800px' }}>
 					<div className="grid-header ats-infobox-header-title">
@@ -901,8 +892,10 @@
 						))}
 						</div>
 
-					  {grid.map((row, rowIndex) => (
-						<div className='icon-row' key={rowIndex}>
+					  {groups.map(group => (
+						<div key={group.name} className='overlap-group' role='group' aria-label={group.name}>
+						{group.rows.map(row => (
+						<div className='icon-row' key={row[0]}>
 						  {row.map((iconName, iconIndex) => (
 							<div
 							  key={iconIndex}
@@ -912,6 +905,8 @@
 							  <img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
 							</div>
 						  ))}
+						</div>
+					  ))}
 						</div>
 					  ))}
 					</div>

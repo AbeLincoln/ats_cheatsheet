@@ -695,6 +695,11 @@ div.ats-container.needs-grid {
     justify-content: center;
 }
 
+/* Same thin divider between need groups as the Species Needs grid */
+.overlap-group + .overlap-group {
+    border-top: 1px solid var(--ats-color-brown-divider);
+}
+
 .overlap-grid .overlap-label {
     border-right: solid 4px var(--ats-color-brown-divider);
     padding-right: 15px;
