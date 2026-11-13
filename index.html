@@ -744,10 +744,19 @@
 
 			// Drag and drop
 			const DraggableContainer = () => {
-				const [items, setItems] = useState([
+				const defaultItems = [
 					{ id: "ingredients", content: <IngredientGrid rows={9} columns={8} /> },
 					{ id: "needs", content: <NeedsGrid /> },
-				]);
+				];
+				// Restore the saved order; widgets missing from it keep their default place at the end
+				const [items, setItems] = useState(() => {
+					const saved = loadSavedState().widgetOrder;
+					const savedOrder = Array.isArray(saved) ? saved.filter((id, i) => saved.indexOf(id) === i) : [];
+					return [
+						...savedOrder.map(id => defaultItems.find(item => item.id === id)).filter(Boolean),
+						...defaultItems.filter(item => !savedOrder.includes(item.id)),
+					];
+				});
 
 				const [direction, setDirection] = useState("horizontal");
 
@@ -770,6 +779,7 @@
 					newItems.splice(result.destination.index, 0, movedItem);
 
 					setItems(newItems);
+					saveState({ widgetOrder: newItems.map(item => item.id) });
 				};
 
 				return (
@@ -1157,13 +1167,12 @@
 				const savedSuggestorState = loadSavedState();
 				const speciesNames = Object.keys(SPECIES);
 				const recipeBuildingGoods = [...TRANSITIONAL_FOR_NEEDED, ...NEEDED_GOODS, ...OTHER_GOODS];
-				const savedSuggestorSpecies = Array.isArray(savedSuggestorState.suggestorSpecies)
-					? savedSuggestorState.suggestorSpecies.filter(species => speciesNames.includes(species)).slice(0, MAX_SPECIES)
-					: [];
 				const [currentRawResources, setCurrentRawResources] = useState(Array.isArray(savedSuggestorState.suggestorRawResources)
 					? savedSuggestorState.suggestorRawResources.filter(resource => RAW_RESOURCES.includes(resource))
 					: []);
-				const [activeSpecies, setActiveSpecies] = useState(savedSuggestorSpecies.length ? savedSuggestorSpecies : null);
+				// Species come from the Species Needs grid above, like Best Buildings
+				const toActiveSpecies = (selection) => selection && selection.length ? selection : null;
+				const [activeSpecies, setActiveSpecies] = useState(toActiveSpecies(window.currentSpeciesSelection));
 				const [hasRecipeBuilding, setHasRecipeBuilding] = useState(Array.isArray(savedSuggestorState.suggestorRecipeBuildings)
 					? savedSuggestorState.suggestorRecipeBuildings.filter(good => recipeBuildingGoods.includes(good))
 					: []);
@@ -1172,7 +1181,11 @@
 					: []);
 
 				useEffect(() => saveState({ suggestorRawResources: currentRawResources }), [currentRawResources]);
-				useEffect(() => saveState({ suggestorSpecies: activeSpecies || [] }), [activeSpecies]);
+				useEffect(() => {
+					const handler = (e) => setActiveSpecies(toActiveSpecies(e.detail));
+					window.addEventListener('speciesSelection', handler);
+					return () => window.removeEventListener('speciesSelection', handler);
+				}, []);
 				useEffect(() => saveState({ suggestorRecipeBuildings: hasRecipeBuilding }), [hasRecipeBuilding]);
 				useEffect(() => saveState({ suggestorServiceBuildings: hasServiceBuilding }), [hasServiceBuilding]);
 
@@ -1194,16 +1207,10 @@
 					});
 				};
 
+				// Toggle through the Species Needs grid so both stay in sync
 				const handleSpeciesClick = (species) => {
-					setActiveSpecies(prev => {
-						if (!prev) return [species];
-						if (prev.includes(species)) {
-							const next = prev.filter(s => s !== species);
-							return next.length ? next : null;
-						}
-						if (prev.length >= MAX_SPECIES) return prev;
-						return [...prev, species];
-					});
+					const gridIcon = document.getElementById(species);
+					if (gridIcon) gridIcon.click();
 				};
 
 				const handleIconClick = (resource) => {
