@@ -866,6 +866,21 @@
 					document.getElementById(iconName).click();
                 };
 
+				// Dim like the Species Needs grid: species not selected, and needs none of the selected species have
+				const [selectedSpecies, setSelectedSpecies] = useState(window.currentSpeciesSelection || []);
+				useEffect(() => {
+					const handler = (e) => setSelectedSpecies(e.detail || []);
+					window.addEventListener('speciesSelection', handler);
+					return () => window.removeEventListener('speciesSelection', handler);
+				}, []);
+				const isShown = (iconName) => {
+					if (selectedSpecies.length === 0 || iconName == "None") return true;
+					if (iconName in SPECIES) return selectedSpecies.includes(iconName);
+					return overlappingNeeds[iconName].some(species => selectedSpecies.includes(species));
+				};
+				const iconClass = (iconName, iconIndex) =>
+					`ats-single-ingredient-icon icon${iconIndex == 0 ? ' overlap-label' : ''}${isShown(iconName) ? '' : ' icon-inactive'}`;
+
 				// One row per need, grouped and ordered like the Species Needs grid
 				const speciesNames = Object.keys(SPECIES);
 				const headerRow = ["None", ...speciesNames];
@@ -884,7 +899,7 @@
 						{headerRow.map((iconName, iconIndex) => (
 							<div
 							key={iconName}
-							className={`ats-single-ingredient-icon icon${iconIndex == 0 ? ' overlap-label' : ''}`}
+							className={iconClass(iconName, iconIndex)}
 							onClick={() => handleIconClick(iconName)}
 							>
 								<img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
@@ -899,7 +914,7 @@
 						  {row.map((iconName, iconIndex) => (
 							<div
 							  key={iconIndex}
-							  className={`ats-single-ingredient-icon icon${iconIndex == 0 ? ' overlap-label' : ''}`}
+							  className={iconClass(iconName, iconIndex)}
 							  onClick={() => handleIconClick(iconName)}
 							>
 							  <img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
