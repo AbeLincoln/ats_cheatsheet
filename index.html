@@ -1433,7 +1433,7 @@
 								<div className="grid-header ats-infobox-header-title">Have Recipe Building</div>
 								<div className="icon-grid-wrapper">
 									<div style={{ display: 'flex', flexDirection: 'column', padding: '8px 0' }}>
-										<div style={{ fontWeight: 600, marginBottom: 4 }}>Transitional</div>
+										<div className="suggestor-subheading">Transitional</div>
 										{TRANSITIONAL_FOR_NEEDED.map(good => (
 											<label key={good} className="suggestor-raw-resource">
 												<input
@@ -1453,7 +1453,7 @@
 												<span>{GOODS[good] ? GOODS[good].displayName : good}</span>
 											</label>
 										))}
-										<div style={{ fontWeight: 600, marginTop: 12, marginBottom: 4 }}>Needed goods</div>
+										<div className="suggestor-subheading">Needed goods</div>
 										{NEEDED_GOODS.map(good => (
 											<label key={good} className="suggestor-raw-resource">
 												<input
@@ -1473,7 +1473,7 @@
 												<span>{GOODS[good] ? GOODS[good].displayName : good}</span>
 											</label>
 										))}
-										<div style={{ fontWeight: 600, marginTop: 12, marginBottom: 4 }}>Service Buildings</div>
+										<div className="suggestor-subheading">Service Buildings</div>
 										{SERVICE_BUILDINGS.map(bid => (
 											<label key={bid} className="suggestor-raw-resource">
 												<input
@@ -1492,7 +1492,7 @@
 												<span>{BUILDINGS[bid] ? BUILDINGS[bid].displayName : bid}</span>
 											</label>
 										))}
-										<div style={{ fontWeight: 600, marginTop: 12, marginBottom: 4 }}>Other</div>
+										<div className="suggestor-subheading">Other</div>
 										{OTHER_GOODS.map(good => (
 											<label key={good} className="suggestor-raw-resource">
 												<input

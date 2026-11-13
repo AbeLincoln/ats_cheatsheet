@@ -1000,6 +1000,21 @@ input:checked + .slider:before {
 	padding: 4px 0;
 }
 
+/* Group headings in the Suggestor's Have Recipe Building column */
+.suggestor-subheading {
+	color: var(--ats-yellow, gold);
+	font-variant: small-caps;
+	font-size: 110%;
+	letter-spacing: 1px;
+	border-bottom: 1px solid var(--ats-color-brown-divider);
+	margin: 12px 0 4px;
+	padding-bottom: 2px;
+}
+
+.suggestor-subheading:first-child {
+	margin-top: 0;
+}
+
 .suggestor-raw-resource img {
 	width: 30px;
 	height: 30px;
