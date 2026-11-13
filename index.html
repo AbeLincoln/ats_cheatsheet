@@ -269,10 +269,16 @@
                 'Market', 'Holy Market', 'Tea Doctor', 'Bath House', 'Feast Hall', 'Academy',
             ];
             // Anything not listed (e.g. a newly added building) goes after the listed ones, alphabetically
-            const listOrder = (list, name) => list.includes(name) ? list.indexOf(name) : list.length;
+            const rankIn = (list) => {
+                const ranks = new Map(list.map((name, index) => [name, index]));
+                return (name) => ranks.has(name) ? ranks.get(name) : list.length;
+            };
+            const categoryRank = rankIn(CATEGORY_ORDER);
+            const buildingRank = rankIn(BUILDING_ORDER);
+            const compareCategory = (a, b) => categoryRank(a) - categoryRank(b) || a.localeCompare(b);
             const compareWikiOrder = (a, b) =>
-                listOrder(CATEGORY_ORDER, a.category) - listOrder(CATEGORY_ORDER, b.category)
-                || listOrder(BUILDING_ORDER, a.building) - listOrder(BUILDING_ORDER, b.building)
+                compareCategory(a.category, b.category)
+                || buildingRank(a.building) - buildingRank(b.building)
                 || a.building.localeCompare(b.building);
 
             // --- Building table data, built once and shared ---
@@ -317,7 +323,7 @@
                 formattedBuildings.sort(compareWikiOrder);
                 // Category filter buttons follow the same order
                 const orderedPerCat = {};
-                for (const category of Object.keys(per_cat).sort((a, b) => listOrder(CATEGORY_ORDER, a) - listOrder(CATEGORY_ORDER, b) || a.localeCompare(b))) {
+                for (const category of Object.keys(per_cat).sort(compareCategory)) {
                     orderedPerCat[category] = per_cat[category];
                 }
                 return { formattedBuildings, per_cat: orderedPerCat };
