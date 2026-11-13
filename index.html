@@ -884,7 +884,7 @@
 					grid.push(row);
                 }
 				return (
-				  <div className="ats-container icon-grid" style={{ minWidth: '740px', maxWidth: '800px' }}>
+				  <div className="ats-container icon-grid overlap-grid" style={{ minWidth: '740px', maxWidth: '800px' }}>
 					<div className="grid-header ats-infobox-header-title">
 					  {"Species Needs Overlap"}
 					</div>
@@ -893,7 +893,7 @@
 						{headerRow.map((iconName, iconIndex) => (
 							<div
 							key={iconName}
-							className={`ats-single-ingredient-icon icon`}
+							className={`ats-single-ingredient-icon icon${iconIndex == 0 ? ' overlap-label' : ''}`}
 							onClick={() => handleIconClick(iconName)}
 							>
 								<img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
@@ -906,8 +906,7 @@
 						  {row.map((iconName, iconIndex) => (
 							<div
 							  key={iconIndex}
-							  className={`ats-single-ingredient-icon icon`}
-							  style={(iconIndex == 0) ? {borderRight: "solid 4px #4f3c21", paddingRight: "15px", marginBottom: "0", marginTop: "0"} : {}}
+							  className={`ats-single-ingredient-icon icon${iconIndex == 0 ? ' overlap-label' : ''}`}
 							  onClick={() => handleIconClick(iconName)}
 							>
 							  <img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />

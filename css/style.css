@@ -689,6 +689,19 @@ div.ats-container.needs-grid {
     border-top: 1px solid var(--ats-color-brown-divider);
 }
 
+/* Species Needs Overlap table: header and need rows share the same columns */
+.overlap-grid .icon-row {
+    flex-wrap: nowrap;
+    justify-content: center;
+}
+
+.overlap-grid .overlap-label {
+    border-right: solid 4px var(--ats-color-brown-divider);
+    padding-right: 15px;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
 .icon {
     display: flex;
     align-items: center;
