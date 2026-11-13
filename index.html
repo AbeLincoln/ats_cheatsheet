@@ -318,7 +318,13 @@
                         setActiveElement(iconName);
                     }
 					saveState({ activeIngredient: newActiveElement });
-					document.getElementById("AllButton").click();
+					// Show all categories in the Buildings table (only on the page while its tab is open)
+					const allButton = document.getElementById("AllButton");
+					if (allButton) {
+						allButton.click();
+					} else {
+						saveState({ activeCategories: Object.keys(PER_CAT) });
+					}
                 };
 
 				const handleReverseChange = (event) => {
