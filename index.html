@@ -744,10 +744,19 @@
 
 			// Drag and drop
 			const DraggableContainer = () => {
-				const [items, setItems] = useState([
+				const defaultItems = [
 					{ id: "ingredients", content: <IngredientGrid rows={9} columns={8} /> },
 					{ id: "needs", content: <NeedsGrid /> },
-				]);
+				];
+				// Restore the saved order; widgets missing from it keep their default place at the end
+				const [items, setItems] = useState(() => {
+					const saved = loadSavedState().widgetOrder;
+					const savedOrder = Array.isArray(saved) ? saved.filter((id, i) => saved.indexOf(id) === i) : [];
+					return [
+						...savedOrder.map(id => defaultItems.find(item => item.id === id)).filter(Boolean),
+						...defaultItems.filter(item => !savedOrder.includes(item.id)),
+					];
+				});
 
 				const [direction, setDirection] = useState("horizontal");
 
@@ -770,6 +779,7 @@
 					newItems.splice(result.destination.index, 0, movedItem);
 
 					setItems(newItems);
+					saveState({ widgetOrder: newItems.map(item => item.id) });
 				};
 
 				return (
