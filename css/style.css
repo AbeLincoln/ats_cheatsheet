@@ -377,6 +377,221 @@ table.data-table > tbody > tr.category-row:hover {
     padding: 12px 2px 2px;
 }
 
+/*
+ * Search box, or the picked ingredient in its place. The row keeps one height so the
+ * table doesn't jump when an ingredient is picked or cleared.
+ */
+.filter-chip-row {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 48px;
+}
+
+.ingredient-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 5px;
+	padding: 2px 6px 2px 4px;
+	background: var(--ats-dark);
+	border: 1px solid var(--ats-yellow);
+	border-radius: 5px;
+	box-shadow: inset 0 0 6px rgba(225, 170, 70, 0.35);
+}
+
+.ingredient-chip img {
+	width: 26px;
+	height: 26px;
+	border: 3px solid transparent;
+	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 2px;
+}
+
+.ingredient-chip-name {
+	color: var(--ats-yellow);
+	font-family: var(--ats-font-heading), serif;
+	font-size: 12pt;
+	font-variant: small-caps;
+	letter-spacing: 0.08em;
+}
+
+button.ingredient-chip-clear {
+	background: none;
+	border: none;
+	padding: 0 4px;
+	color: var(--ats-gold);
+	font-size: 12pt;
+	line-height: 1;
+	cursor: pointer;
+}
+
+button.ingredient-chip-clear:hover {
+	color: var(--ats-bright-gold);
+}
+
+button.ingredient-chip-clear:focus-visible {
+	outline: 2px solid var(--ats-bright-blue);
+	outline-offset: 2px;
+}
+
+/* Rows of filter buttons above a table */
+.button-row {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: stretch;
+	margin: 4px 0;
+}
+
+.button-divider {
+	width: 1px;
+	margin: 6px 6px;
+	background-color: var(--ats-color-brown-divider);
+}
+
+/*
+ * Buildings table layout: each building is its own carved row with a gap between rows,
+ * like the wiki's recipe tables. No lines between the columns inside a row.
+ * Fixed column widths, so filtering doesn't shift the columns (or the header buttons under the cursor).
+ */
+table.buildings-table {
+	border-collapse: separate;
+	border-spacing: 0 8px;
+	margin-top: 4px;
+	table-layout: fixed;
+}
+
+.buildings-table th:nth-child(1) { width: 36%; }
+.buildings-table th:nth-child(2) { width: 38%; }
+.buildings-table th:nth-child(3) { width: 26%; }
+
+.buildings-table td {
+	border: none;
+	border-top: 2px ridge var(--ats-brown);
+	border-bottom: 2px ridge var(--ats-brown);
+	padding: 6px 10px;
+	vertical-align: middle;
+}
+
+.buildings-table td:first-child {
+	border-left: 2px ridge var(--ats-brown);
+}
+
+.buildings-table td:last-child {
+	border-right: 2px ridge var(--ats-brown);
+}
+
+/* Only the header text and buttons are clickable, not the whole cell */
+.buildings-table th {
+	padding: 2px 10px 4px;
+	cursor: default;
+}
+
+.buildings-table th:hover {
+	color: var(--ats-color-tan-headings-text);
+}
+
+/* Building header: plain text that sorts when clicked */
+.buildings-table button.sort-button {
+	background: none;
+	border: none;
+	padding: 0;
+	color: inherit;
+	font: inherit;
+	letter-spacing: inherit;
+	text-transform: inherit;
+	cursor: pointer;
+}
+
+.buildings-table button.sort-button:hover {
+	color: var(--ats-bright-gold);
+}
+
+.buildings-table button.sort-button:focus-visible {
+	outline: 2px solid var(--ats-bright-blue);
+	outline-offset: 2px;
+}
+
+.buildings-table .sort-indicator {
+	color: var(--ats-yellow);
+}
+
+.buildings-table th[aria-sort="none"] .sort-indicator {
+	color: inherit;
+	opacity: 0.5;
+}
+
+/* Products / Building Cost headers as toggle buttons while searching or filtering by ingredient */
+.buildings-table button.column-filter {
+	font-size: 11pt;
+	padding: 1px 10px;
+	margin: 0;
+}
+
+/* Category headings: gold heading text with a short underline, no box */
+.buildings-table tr.category-row td {
+	border: none;
+	padding: 10px 2px 0;
+}
+
+.buildings-table tr.category-row td span {
+	display: inline-block;
+	border-bottom: 1px solid var(--ats-color-brown-divider);
+	padding-right: 30px;
+}
+
+.buildings-table tr.empty-row td {
+	text-align: center;
+	text-transform: none;
+	font-style: italic;
+	padding: 14px 10px;
+}
+
+/* Icon beside the name; a long name wraps beside the icon, not under it */
+.buildings-table .building-cell {
+	display: flex;
+	align-items: center;
+}
+
+/* Same gold frame as the goods icons (from .data-table td > * > img), but not clickable */
+.buildings-table img.building-icon {
+	flex: none;
+	width: 52px;
+	height: 52px;
+	margin: 4px 14px 4px 2px;
+	vertical-align: middle;
+	cursor: default;
+}
+
+.buildings-table .building-name {
+	color: var(--ats-color-white);
+	font-family: var(--ats-font-heading), serif;
+	font-size: 13pt;
+	font-weight: 500;
+	font-variant: small-caps;
+	text-transform: none;
+	letter-spacing: 0.08em;
+}
+
+.buildings-table .good-line {
+	white-space: nowrap;
+	margin: 2px 0;
+}
+
+.buildings-table .grade {
+	color: var(--ats-yellow);
+	margin-left: 6px;
+	letter-spacing: 0;
+}
+
+/* Costs: right-align the amounts so the icons line up */
+.buildings-table .good-amount {
+	display: inline-block;
+	min-width: 1.6em;
+	margin-right: 6px;
+	text-align: right;
+}
+
 /* Species affinity picker above the buildings table */
 .affinity-picker {
     display: flex;

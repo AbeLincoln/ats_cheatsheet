@@ -33,9 +33,21 @@
 
         <!-- React code -->
         <script type="text/babel">
-            const { useState, useEffect } = React;
+            const { useState, useEffect, useRef } = React;
 			const { DragDropContext, Droppable, Draggable } = ReactBeautifulDnd;
 			const SAVED_STATE_KEY = 'ats-cheatsheet:v1';
+
+			// Listen for a window event (e.g. 'speciesSelection', 'ingredientSelection') while mounted.
+			// The latest handler is always used, so it can read current state.
+			const useWindowEvent = (eventName, handler) => {
+				const handlerRef = useRef(handler);
+				handlerRef.current = handler;
+				useEffect(() => {
+					const listener = (event) => handlerRef.current(event);
+					window.addEventListener(eventName, listener);
+					return () => window.removeEventListener(eventName, listener);
+				}, [eventName]);
+			};
 
 			const loadSavedState = () => {
 				try {
@@ -251,6 +263,14 @@
             // https://wiki.hoodedhorse.com/Against_the_Storm/Buildings
             // The Mine is listed under Resource Gathering, and the Blight Post under City Buildings before the services.
             const CATEGORY_ORDER = ['Resource Gathering', 'Extraction Building', 'Food Production', 'Industry', 'Special Building', 'City Buildings'];
+            // Shorter button labels: "building" is implied in the Buildings table
+            const CATEGORY_BUTTON_LABELS = { 'Extraction Building': 'Extraction', 'Special Building': 'Special', 'City Buildings': 'City' };
+            const categoryButtonLabel = (category) => CATEGORY_BUTTON_LABELS[category] || category;
+            // Recipe grade for screen readers: '☆' is 0 stars, '★★' is 2 stars
+            const gradeLabel = (grade) => {
+                const stars = [...grade].filter(character => character === '★').length;
+                return stars === 1 ? '1 star' : `${stars} stars`;
+            };
             const BUILDING_ORDER = [
                 "Woodcutters' Camp", "Stonecutters' Camp", "Harvesters' Camp", "Small Foragers' Camp", "Foragers' Camp",
                 "Small Herbalists' Camp", "Herbalists' Camp", "Small Trappers' Camp", "Trappers' Camp", 'Small Fishing Hut',
@@ -358,13 +378,8 @@
                         setActiveElement(iconName);
                     }
 					saveState({ activeIngredient: newActiveElement });
-					// Show all categories in the Buildings table (only on the page while its tab is open)
-					const allButton = document.getElementById("AllButton");
-					if (allButton) {
-						allButton.click();
-					} else {
-						saveState({ activeCategories: Object.keys(PER_CAT) });
-					}
+					// Tell the Buildings table (it keeps its category filters)
+					window.dispatchEvent(new CustomEvent('ingredientSelection', { detail: newActiveElement }));
                 };
 
 				const handleReverseChange = (event) => {
@@ -589,17 +604,20 @@
 			// Buildings data table
 			const DataTable = () => {
 				const per_cat = PER_CAT;
-				const savedTableState = loadSavedState();
+				const [savedTableState] = useState(loadSavedState); // read once, for the initial values
 				const categoryNames = Object.keys(per_cat);
-				const initialActiveCats = Array.isArray(savedTableState.activeCategories)
+				const savedCats = Array.isArray(savedTableState.activeCategories)
 					? savedTableState.activeCategories.filter(category => categoryNames.includes(category))
-					: categoryNames;
+					: [];
+				const initialActiveCats = savedCats.length ? savedCats : categoryNames; // none saved means all
 				const initialActiveFilts = Array.isArray(savedTableState.buildingFilters)
 					? savedTableState.buildingFilters.filter(filter => ['Products', 'Costs'].includes(filter))
 					: ['Products'];
 				const [data, setData] = useState(FORMATTED_BUILDINGS);
 				const [searchTerm, setSearchTerm] = useState(typeof savedTableState.buildingSearch === 'string' ? savedTableState.buildingSearch : '');
-				const [sortKey, setSortKey] = useState(['category', 'building', 'products', 'cost'].includes(savedTableState.sortKey) ? savedTableState.sortKey : 'category');
+				// Sorting: grouped by category (the default), or by building name. Older saved
+				// 'products' / 'cost' sorts fall back to the default.
+				const [sortKey, setSortKey] = useState(['category', 'building'].includes(savedTableState.sortKey) ? savedTableState.sortKey : 'category');
 				const [sortDirection, setSortDirection] = useState(['asc', 'desc'].includes(savedTableState.sortDirection) ? savedTableState.sortDirection : 'asc');
 				const [activeCats, setActiveCats] = useState(initialActiveCats);
 				const [activeFilts, setActiveFilts] = useState(initialActiveFilts);
@@ -633,47 +651,28 @@
                 };
 
 				const sortedData = [...data].sort((a, b) => {
-					if (!sortKey || sortDirection === null) return 0; // Check for null sortDirection
 					if (sortKey === 'category') return compareWikiOrder(a, b);
-
-					const aValue = a[sortKey];
-					const bValue = b[sortKey];
-
-					if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-					if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-					// Tie-break by building name so groups stay alphabetized
-					if (a.building < b.building) return -1;
-					if (a.building > b.building) return 1;
-					return 0;
+					const byName = a.building.localeCompare(b.building);
+					return sortDirection === 'desc' ? -byName : byName;
 				});
 
-				const isGrouped = sortKey === 'category' && sortDirection !== null;
-				
+				const isGrouped = sortKey === 'category';
+
 				const handleFilter = (filterCat) => {
 					if (filterCat === "Costs" || filterCat === "Products") {
-						setActiveFilts(prevActiveFilts => {
-							const newActiveFilts = [...prevActiveFilts]; // Create a copy
-							if (prevActiveFilts.length == Object.keys(per_cat).length) {
-								return [filterCat];
-							}
-							
-							const idx = newActiveFilts.indexOf(filterCat);
-							if (idx === -1) {
-								newActiveFilts.push(filterCat);
-							} else {
-								newActiveFilts.splice(idx, 1);
-							}
-							return newActiveFilts;
-						});
+						// Toggle one column. With both off, the ingredient filters nothing and a search matches names only.
+						setActiveFilts(prevActiveFilts => prevActiveFilts.includes(filterCat)
+							? prevActiveFilts.filter(filter => filter !== filterCat)
+							: [...prevActiveFilts, filterCat]);
 						return;
 					}
 				
 					if (filterCat === "all") {
-						setActiveCats(Object.keys(per_cat));
+						setActiveCats(categoryNames);
 					} else {
 						setActiveCats(prevActiveCats => {
 							const newActiveCats = [...prevActiveCats]; // Create a copy
-							if (prevActiveCats.length == Object.keys(per_cat).length) {
+							if (prevActiveCats.length == categoryNames.length) {
 								return [filterCat];
 							}
 							
@@ -683,33 +682,50 @@
 							} else {
 								newActiveCats.splice(idx, 1);
 							}
-							return newActiveCats;
+							// Turning off the last category shows everything again, like "All"
+							return newActiveCats.length ? newActiveCats : categoryNames;
 						});
 					}
 				};
-				
-				const activeIngredient = document.getElementsByClassName("icon-active");
+
+				const allCatsActive = activeCats.length == categoryNames.length;
+				// The ingredient picked in the Ingredient Grid (null when none), kept in sync by its event
+				const [activeIngredient, setActiveIngredient] = useState(savedTableState.activeIngredient in GOODS ? savedTableState.activeIngredient : null);
+				useWindowEvent('ingredientSelection', (e) => setActiveIngredient(e.detail || null));
 				
 				const filteredData = sortedData.filter(item => {
 					if (activeCats.indexOf(item.category) == -1) {
 						return false;
 					}
 
-					var cost = JSON.stringify(item.cost);
-					var products = JSON.stringify(item.products);
-					if (activeFilts.indexOf("Costs") == -1) {
-						cost = "";
+					// Match against the item names in the columns that are switched on
+					const goodNames = [
+						...(activeFilts.includes('Products') ? item.products.map(product => product.name) : []),
+						...(activeFilts.includes('Costs') ? item.cost.map(cost => cost.name) : []),
+					].filter(Boolean).map(name => name.toLowerCase());
+					if (activeIngredient) {
+						if (activeFilts.length === 0) return true; // both columns off: the ingredient filters nothing
+						return goodNames.includes(activeIngredient.toLowerCase()); // whole name, so Fish doesn't match Fishing Bait
 					}
-					if (activeFilts.indexOf("Products") == -1) {
-						products = "";
-					}
-					const searchString = `${item.building} ${products} ${cost}`.toLowerCase(); // Customize search
-					if (activeIngredient.length > 0) {
-						return searchString.includes('name":"'+activeIngredient[0].id.toLowerCase());
-					}
-					
-					return searchString.includes(searchTerm.toLowerCase());
+					const term = searchTerm.toLowerCase();
+					return [item.building.toLowerCase(), ...goodNames].some(name => name.includes(term));
 				});
+
+				// Products / Building Cost headers become match toggles while a search or ingredient is
+				// active: they choose which columns the search or ingredient is matched against.
+				const matching = activeIngredient !== null || searchTerm !== '';
+				const matchTarget = activeIngredient || `"${searchTerm}"`;
+				const columnHeader = (filter, label, verb) => {
+					if (!matching) return label;
+					const on = activeFilts.includes(filter);
+					return (
+						<button type="button" className={`column-filter ${on ? 'cat-active' : 'cat-inactive'}`} aria-pressed={on}
+							title={`${on ? 'Including' : 'Not including'} buildings that ${verb} ${matchTarget}. Click to ${on ? 'exclude' : 'include'} them.`}
+							onClick={() => handleFilter(filter)}>
+							{label}
+						</button>
+					);
+				};
 
 				return (
 					<div className="ats-container icon-grid" style={{ minWidth: '850px' }}>
@@ -717,60 +733,71 @@
 							{"Buildings"}
 						</div>
 						<div className="icon-grid-wrapper">
-							{(activeIngredient.length == 0) ? 
-							<div><input type="text" placeholder="Search" id="SearchInput" value={searchTerm} onChange={handleSearch} /></div>
+							{/* While an ingredient is picked, it replaces the search box: icon, name, and a button to clear it */}
+							{activeIngredient ?
+							<div className="filter-chip-row">
+								<span className="ingredient-chip">
+									<img src={GOODS[activeIngredient].icon_path} alt="" />
+									<span className="ingredient-chip-name">{activeIngredient}</span>
+									<button type="button" className="ingredient-chip-clear" onClick={() => handleIconClick(activeIngredient)}
+										title={`Stop filtering by ${activeIngredient}`} aria-label={`Stop filtering by ${activeIngredient}`}>✕</button>
+								</span>
+							</div>
 							:
-								<div>
-								<button onClick={() => handleFilter("Products")} className={(activeFilts.indexOf("Products") == -1) ? "cat-inactive" : "cat-active"}>Products</button>
-								<button onClick={() => handleFilter("Costs")} className={(activeFilts.indexOf("Costs") == -1) ? "cat-inactive" : "cat-active"}>Costs</button>
-								<hr/>
-								</div>
+							<div className="filter-chip-row"><input type="text" placeholder="Search" id="SearchInput" value={searchTerm} onChange={handleSearch} /></div>
 							}
-							<div>
-							<button onClick={() => handleFilter("all")} id="AllButton" className={(activeCats.length == Object.keys(per_cat).length) ? "cat-active" : "cat-inactive"}>all</button>
-							{Object.keys(per_cat).map((catItem, catIndex) => ( 
-								<button key={catItem} onClick={() => handleFilter(catItem)} className={(activeCats.indexOf(catItem) == -1) ? "cat-inactive" : "cat-active"}>{catItem}</button>
+							<div className="button-row">
+							<button onClick={() => handleFilter("all")} id="AllButton" className={allCatsActive ? "cat-active" : "cat-inactive"}>All</button>
+							<span className="button-divider" aria-hidden="true"></span>
+							{/* With everything shown, only "All" is highlighted: clicking a category then shows just that one */}
+							{Object.keys(per_cat).map((catItem, catIndex) => (
+								<button key={catItem} onClick={() => handleFilter(catItem)} className={(allCatsActive || activeCats.indexOf(catItem) == -1) ? "cat-inactive" : "cat-active"}>{categoryButtonLabel(catItem)}</button>
 							))}
 							</div>
-							<table className="data-table">
+							<table className="data-table buildings-table">
 								<thead>
 									<tr>
-										<th onClick={() => handleSort('building')}>
-											Building
-											{sortKey === 'building' && (sortDirection === 'asc' ? ' ▲' : sortDirection === 'desc' ? ' ▼' : '')}
+										<th aria-sort={isGrouped ? 'none' : sortDirection === 'asc' ? 'ascending' : 'descending'}>
+											<button type="button" className="sort-button" onClick={() => handleSort('building')}
+												title={isGrouped ? 'Sort by name, A to Z' : sortDirection === 'asc' ? 'Sort by name, Z to A' : 'Back to grouped by category'}>
+												Building
+												<span className="sort-indicator" aria-hidden="true">{isGrouped ? ' ⇅' : sortDirection === 'asc' ? ' ▲' : ' ▼'}</span>
+											</button>
 										</th>
-										<th onClick={() => handleSort('products')}>
-											Products
-											{sortKey === 'products' && (sortDirection === 'asc' ? ' ▲' : sortDirection === 'desc' ? ' ▼' : '')}
-										</th>
-										<th onClick={() => handleSort('cost')}>
-											Building Cost
-											{sortKey === 'cost' && (sortDirection === 'asc' ? ' ▲' : sortDirection === 'desc' ? ' ▼' : '')}
-										</th>
-										{/* Add more columns as needed */}
+										<th>{columnHeader('Products', 'Products', 'make')}</th>
+										<th>{columnHeader('Costs', 'Building Cost', 'are built with')}</th>
 									</tr>
 								</thead>
 								<tbody>
+									{filteredData.length === 0 &&
+										<tr className="empty-row">
+											<td colSpan="3">
+												{allCatsActive ? 'No buildings match.' : 'No buildings match in the selected categories. Click "All" to see every category.'}
+											</td>
+										</tr>
+									}
 									{filteredData.map((item, index) => (
 										<React.Fragment key={item.id}>
 										{isGrouped && (index === 0 || filteredData[index - 1].category !== item.category) &&
 											<tr className="category-row">
-												<td colSpan="3">{item.category}</td>
+												<td colSpan="3"><span>{item.category}</span></td>
 											</tr>
 										}
 										<tr>
 											<td>
-												<img src={item.icon} alt={item.building} style={{ maxWidth: '60px', maxHeight: '60px', margin: '10px' }} />
-												{item.building}
+												<div className="building-cell">
+													<img className="building-icon" src={item.icon} alt={item.building} />
+													<span className="building-name">{item.building}</span>
+												</div>
 											</td>
 											<td>
 												{item.products.map((productItem, productIndex) => (
-												  <div key={productIndex}><img onClick={() => handleIconClick(productItem.name)} alt={productItem.name} src={productItem.icon_path} width="30" height="30"/> {productItem.name} {productItem.grade ? "(" + productItem.grade + ")" : ""}</div>
+												  <div key={productIndex} className="good-line"><img onClick={() => handleIconClick(productItem.name)} alt={productItem.name} src={productItem.icon_path} width="30" height="30"/> {productItem.name}{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}</div>
 												))}
 											</td>
 											<td>
 												{item.cost.map((costItem, costIndex) => (
-												  <div key={costIndex}>{costItem.amount} <img alt={costItem.name} onClick={() => handleIconClick(costItem.name)} src={costItem.icon_path} width="30" height="30"/> {costItem.name}</div>
+												  <div key={costIndex} className="good-line"><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} onClick={() => handleIconClick(costItem.name)} src={costItem.icon_path} width="30" height="30"/> {costItem.name}</div>
 												))}
 											</td>
 										</tr>
@@ -909,11 +936,7 @@
 
 				// Dim like the Species Needs grid: species not selected, and needs none of the selected species have
 				const [selectedSpecies, setSelectedSpecies] = useState(window.currentSpeciesSelection || []);
-				useEffect(() => {
-					const handler = (e) => setSelectedSpecies(e.detail || []);
-					window.addEventListener('speciesSelection', handler);
-					return () => window.removeEventListener('speciesSelection', handler);
-				}, []);
+				useWindowEvent('speciesSelection', (e) => setSelectedSpecies(e.detail || []));
 				const isShown = (iconName) => {
 					if (selectedSpecies.length === 0 || iconName == "None") return true;
 					if (iconName in SPECIES) return selectedSpecies.includes(iconName);
@@ -1232,11 +1255,7 @@
 					: []);
 
 				useEffect(() => saveState({ suggestorRawResources: currentRawResources }), [currentRawResources]);
-				useEffect(() => {
-					const handler = (e) => setActiveSpecies(toActiveSpecies(e.detail));
-					window.addEventListener('speciesSelection', handler);
-					return () => window.removeEventListener('speciesSelection', handler);
-				}, []);
+				useWindowEvent('speciesSelection', (e) => setActiveSpecies(toActiveSpecies(e.detail)));
 				useEffect(() => saveState({ suggestorRecipeBuildings: hasRecipeBuilding }), [hasRecipeBuilding]);
 				useEffect(() => saveState({ suggestorServiceBuildings: hasServiceBuilding }), [hasServiceBuilding]);
 
@@ -1532,11 +1551,7 @@
 				const [species, setSpecies] = useState(window.currentSpeciesSelection || []);
 				const [includeFlawless, setIncludeFlawless] = useState(loadSavedState().includeFlawless === true);
 
-				useEffect(() => {
-					const handler = (e) => setSpecies(e.detail || []);
-					window.addEventListener('speciesSelection', handler);
-					return () => window.removeEventListener('speciesSelection', handler);
-				}, []);
+				useWindowEvent('speciesSelection', (e) => setSpecies(e.detail || []));
 
 				useEffect(() => saveState({ includeFlawless }), [includeFlawless]);
 
