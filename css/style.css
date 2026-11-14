@@ -149,27 +149,55 @@ hr {
 	margin: 10px;
 }
 
-.tabs button {
-	color: var(--ats-yellow, gold);
-	font-variant: small-caps;
-    font-family: var(--ats-font-heading),serif;
-    font-size: 14pt;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    line-height: 1.4em;
+/*
+ * Lower-half buttons (tabs, Buildings filters, Best Buildings' Flawless toggle) share one game style:
+ * dark green, gold small caps, thin brown border. The selected one gets a yellow edge and glow.
+ */
+.tabs button,
+button.cat-active,
+button.cat-inactive,
+button.flawless-toggle {
+	color: var(--ats-gold);
 	background-color: #081007;
-	border: 2.5px ridge #93775d;
+	border: 1px solid var(--ats-brown);
+	border-radius: 4px;
+	font-family: var(--ats-font-heading), serif;
+	font-variant: small-caps;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	line-height: 1.3;
+	cursor: pointer;
 }
 
-.tab {
-    padding: 10px 15px;
-    border: none;
-    background-color: #eee;
-    cursor: pointer;
+.tabs button:hover,
+button.cat-active:hover,
+button.cat-inactive:hover,
+button.flawless-toggle:hover {
+	color: var(--ats-bright-gold);
+	border-color: var(--ats-gold);
 }
 
-.tab.active {
-    background-color: #11220f;
+.tabs button.active,
+button.cat-active,
+button.flawless-toggle.flawless-toggle-active {
+	color: var(--ats-yellow);
+	background-color: var(--ats-dark-brown);
+	border-color: var(--ats-yellow);
+	box-shadow: inset 0 0 6px rgba(225, 170, 70, 0.35);
+}
+
+.tabs button:focus-visible,
+button.cat-active:focus-visible,
+button.cat-inactive:focus-visible,
+button.flawless-toggle:focus-visible {
+	outline: 2px solid var(--ats-bright-blue);
+	outline-offset: 2px;
+}
+
+.tabs button {
+	font-size: 14pt;
+	padding: 6px 15px;
+	margin: 0 3px;
 }
 
 .tab-content {
@@ -268,28 +296,17 @@ img {
 	color:  var(--ats-color-white, #dedede);
 }
 
-button.cat-active {
-    font-variant: small-caps;
-    font-size: 12pt;
-	cursor: pointer;
-	
-	background-color: var(--ats-bright-gold);
-	padding: 2px;
-	border: 0;
-	margin: 2px;
-}
-
+button.cat-active,
 button.cat-inactive {
-    font-variant: small-caps;
-    font-size: 12pt;
-	cursor: pointer;
-	
-	background-color: var(--ats-gold);
-	padding: 2px;
-	border: 0;
-	margin: 2px;
+	font-size: 12pt;
+	padding: 3px 10px;
+	margin: 3px;
 }
 
+/*
+ * Data tables (Buildings, Suggestor, Best Buildings): the wiki's recipe-table look.
+ * Carved ridge borders, a see-through dark fill, tan uppercase headings, condensed uppercase cells.
+ */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -298,9 +315,17 @@ button.cat-inactive {
 }
 
 .data-table th, .data-table td {
-    border: 2px solid var(--ats-dark, black);
+    border: 2px ridge var(--ats-brown);
     padding: 8px;
     text-align: left;
+}
+
+.data-table th, .data-table td, .suggestor-raw-resource {
+	font-family: var(--ats-font-condensed), sans-serif;
+	font-size: 10pt;
+	font-weight: 400;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
 }
 
 .data-table td > * > img, .data-table td > img {
@@ -313,37 +338,43 @@ button.cat-inactive {
 	cursor: pointer;
 }
 
-table.data-table > * > tr {
-	background-color: var(--ats-color-green-leather-shadow);
-}
-
-table.data-table > * > tr:nth-child(odd) {
-	background-color: var(--ats-color-green-leather-shadow-lighter);
+table.data-table > tbody > tr {
+	background-color: rgba(0, 0, 0, 0.25);
 }
 
 .data-table th {
-	background-color: var(--ats-color-cyan-very-dark);
-	border: 2px solid var(--ats-dark, black);
+	color: var(--ats-color-tan-headings-text);
+	background-color: transparent;
+	border: none;
+	border-bottom: 2px solid var(--ats-color-brown-divider);
     cursor: pointer; /* Make header clickable for sorting */
 }
 
-table.data-table > * > tr:hover {
-    background-color: var(--ats-gold); /* Highlight row on hover */
+.data-table th:hover {
+	color: var(--ats-bright-gold);
+}
+
+table.data-table > tbody > tr:hover {
+    background-color: rgba(167, 147, 114, 0.16); /* Faint gold tint on hover; keeps the text readable */
 }
 
 /* Category group headers when the table is grouped by category */
 table.data-table > tbody > tr.category-row,
-table.data-table > tbody > tr.category-row:nth-child(odd),
 table.data-table > tbody > tr.category-row:hover {
-    background-color: var(--ats-color-cyan-very-dark);
+    background-color: transparent;
 }
 
 .data-table .category-row td {
     color: var(--ats-yellow, gold);
-    font-size: 120%;
+    font-family: var(--ats-font-heading), serif;
+    font-size: 14pt;
+    font-weight: 500;
     font-variant: small-caps;
-    letter-spacing: 1px;
-    padding: 4px 8px;
+    text-transform: none;
+    letter-spacing: 0.1em;
+    border: none;
+    border-bottom: 1px solid var(--ats-color-brown-divider);
+    padding: 12px 2px 2px;
 }
 
 /* Species affinity picker above the buildings table */
@@ -361,27 +392,9 @@ table.data-table > tbody > tr.category-row:hover {
 }
 
 button.flawless-toggle {
-	background: transparent;
-	border: 1px solid var(--ats-brown);
-	border-radius: 3px;
-	color: var(--ats-gold);
-	cursor: pointer;
-	font-family: var(--ats-font-body), sans-serif;
-	font-size: 10pt;
+	font-size: 12pt;
 	margin-left: 8px;
-	padding: 5px 9px;
-}
-
-button.flawless-toggle:hover {
-	border-color: var(--ats-gold);
-	color: var(--ats-bright-gold);
-}
-
-button.flawless-toggle-active {
-	background: var(--ats-gold);
-	border-color: var(--ats-bright-gold);
-	color: var(--ats-dark);
-	font-weight: 600;
+	padding: 3px 10px;
 }
 
 .affinity-picker .affinity-portrait {
