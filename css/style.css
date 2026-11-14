@@ -689,6 +689,24 @@ div.ats-container.needs-grid {
     border-top: 1px solid var(--ats-color-brown-divider);
 }
 
+/* Species Needs Overlap table: header and need rows share the same columns */
+.overlap-grid .icon-row {
+    flex-wrap: nowrap;
+    justify-content: center;
+}
+
+/* Same thin divider between need groups as the Species Needs grid */
+.overlap-group + .overlap-group {
+    border-top: 1px solid var(--ats-color-brown-divider);
+}
+
+.overlap-grid .overlap-label {
+    border-right: solid 4px var(--ats-color-brown-divider);
+    padding-right: 15px;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
 .icon {
     display: flex;
     align-items: center;
@@ -980,6 +998,21 @@ input:checked + .slider:before {
 	letter-spacing: 0.10em;
 	word-spacing: 0.06em;
 	padding: 4px 0;
+}
+
+/* Group headings in the Suggestor's Have Recipe Building column */
+.suggestor-subheading {
+	color: var(--ats-yellow, gold);
+	font-variant: small-caps;
+	font-size: 110%;
+	letter-spacing: 1px;
+	border-bottom: 1px solid var(--ats-color-brown-divider);
+	margin: 12px 0 4px;
+	padding-bottom: 2px;
+}
+
+.suggestor-subheading:first-child {
+	margin-top: 0;
 }
 
 .suggestor-raw-resource img {

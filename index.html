@@ -247,6 +247,40 @@
                 return lines.join('\n');
             };
 
+            // Category and building order from the wiki's List of Buildings.
+            // https://wiki.hoodedhorse.com/Against_the_Storm/Buildings
+            // The Mine is listed under Resource Gathering, and the Blight Post under City Buildings before the services.
+            const CATEGORY_ORDER = ['Resource Gathering', 'Extraction Building', 'Food Production', 'Industry', 'Special Building', 'City Buildings'];
+            const BUILDING_ORDER = [
+                "Woodcutters' Camp", "Stonecutters' Camp", "Harvesters' Camp", "Small Foragers' Camp", "Foragers' Camp",
+                "Small Herbalists' Camp", "Herbalists' Camp", "Small Trappers' Camp", "Trappers' Camp", 'Small Fishing Hut',
+                'Fishing Hut', 'Clay Pit', "Forester's Hut", 'Geyser Pump', 'Rain Collector', 'Advanced Rain Collector', 'Mine',
+                'Small Farm', 'Hallowed Small Farm', 'Plantation', 'Herb Garden', 'Hallowed Herb Garden', 'Brineworks',
+                'Greenhouse', 'Ranch', 'Field Kitchen', 'Bakery', 'Cookhouse', 'Smokehouse', 'Butcher', 'Beanery', 'Cellar',
+                'Flawless Cellar', 'Cannery', 'Granary', 'Grill', 'Rain Mill', 'Flawless Rain Mill', 'Pantry', 'Apothecary',
+                'Furnace', 'Homestead',
+                'Crude Workstation', 'Makeshift Post', 'Workshop', 'Lumber Mill', 'Cooperage', 'Flawless Cooperage', 'Carpenter',
+                'Cobbler', 'Weaver', 'Clothier', 'Leatherworker', 'Flawless Leatherworker', 'Brick Oven', 'Brickyard', 'Kiln',
+                'Press', 'Provisioner', 'Stamping Mill', 'Smelter', 'Flawless Smelter', 'Smithy', 'Toolshop', 'Artisan',
+                "Alchemist's Hut", 'Teahouse', 'Brewery', 'Flawless Brewery', 'Distillery', 'Tinctury', "Druid's Hut",
+                "Flawless Druid's Hut", 'Tinkerer', 'Manufactory', 'Supplier', 'Scribe', 'Rainpunk Foundry', 'Finesmith',
+                'Blight Post',
+                'Tavern', 'Temple', 'Holy Temple', 'Monastery', 'Clan Hall', 'Forum', 'Guild House', 'Holy Guild House',
+                'Market', 'Holy Market', 'Tea Doctor', 'Bath House', 'Feast Hall', 'Academy',
+            ];
+            // Anything not listed (e.g. a newly added building) goes after the listed ones, alphabetically
+            const rankIn = (list) => {
+                const ranks = new Map(list.map((name, index) => [name, index]));
+                return (name) => ranks.has(name) ? ranks.get(name) : list.length;
+            };
+            const categoryRank = rankIn(CATEGORY_ORDER);
+            const buildingRank = rankIn(BUILDING_ORDER);
+            const compareCategory = (a, b) => categoryRank(a) - categoryRank(b) || a.localeCompare(b);
+            const compareWikiOrder = (a, b) =>
+                compareCategory(a.category, b.category)
+                || buildingRank(a.building) - buildingRank(b.building)
+                || a.building.localeCompare(b.building);
+
             // --- Building table data, built once and shared ---
             const buildFormattedBuildings = () => {
                 const formattedBuildings = [];
@@ -286,7 +320,13 @@
                         comfortTags: BUILDINGS[building].comfortTags || [],
                     });
                 }
-                return { formattedBuildings, per_cat };
+                formattedBuildings.sort(compareWikiOrder);
+                // Category filter buttons follow the same order
+                const orderedPerCat = {};
+                for (const category of Object.keys(per_cat).sort(compareCategory)) {
+                    orderedPerCat[category] = per_cat[category];
+                }
+                return { formattedBuildings, per_cat: orderedPerCat };
             };
             const { formattedBuildings: FORMATTED_BUILDINGS, per_cat: PER_CAT } = buildFormattedBuildings();
 
@@ -594,6 +634,7 @@
 
 				const sortedData = [...data].sort((a, b) => {
 					if (!sortKey || sortDirection === null) return 0; // Check for null sortDirection
+					if (sortKey === 'category') return compareWikiOrder(a, b);
 
 					const aValue = a[sortKey];
 					const bValue = b[sortKey];
@@ -866,34 +907,41 @@
 					document.getElementById(iconName).click();
                 };
 
-                // Generate grid layout from the SPECIES keys
-                const needsNames = Object.keys(overlappingNeeds);
+				// Dim like the Species Needs grid: species not selected, and needs none of the selected species have
+				const [selectedSpecies, setSelectedSpecies] = useState(window.currentSpeciesSelection || []);
+				useEffect(() => {
+					const handler = (e) => setSelectedSpecies(e.detail || []);
+					window.addEventListener('speciesSelection', handler);
+					return () => window.removeEventListener('speciesSelection', handler);
+				}, []);
+				const isShown = (iconName) => {
+					if (selectedSpecies.length === 0 || iconName == "None") return true;
+					if (iconName in SPECIES) return selectedSpecies.includes(iconName);
+					return overlappingNeeds[iconName].some(species => selectedSpecies.includes(species));
+				};
+				const iconClass = (iconName, iconIndex) =>
+					`ats-single-ingredient-icon icon${iconIndex == 0 ? ' overlap-label' : ''}${isShown(iconName) ? '' : ' icon-inactive'}`;
 
+				// One row per need, grouped and ordered like the Species Needs grid
 				const speciesNames = Object.keys(SPECIES);
 				const headerRow = ["None", ...speciesNames];
-				const grid = [];
-                for (let i = 0; i < needsNames.length; i++) {
-                    const row = [needsNames[i]];
-					for (let j = 0; j < speciesNames.length; j++) {
-						if (overlappingNeeds[needsNames[i]].indexOf(speciesNames[j]) >= 0) {
-							row.push(speciesNames[j]);
-						} else {
-							row.push("None");
-						}
-					}
-					grid.push(row);
-                }
+				const groups = NEED_GROUPS.map(group => ({
+					name: group.name,
+					rows: group.needs.filter(need => need in overlappingNeeds).map(need =>
+						[need, ...speciesNames.map(species => overlappingNeeds[need].includes(species) ? species : "None")]),
+				}));
 				return (
-				  <div className="ats-container icon-grid" style={{ minWidth: '740px', maxWidth: '800px' }}>
+				  <div className="ats-container icon-grid overlap-grid" style={{ minWidth: '740px', maxWidth: '800px' }}>
 					<div className="grid-header ats-infobox-header-title">
 					  {"Species Needs Overlap"}
+					  <SacredGroveWarning count={selectedSpecies.length} />
 					</div>
 					<div className="icon-grid-wrapper">
 						<div className={`icon-row header-row`} style={{marginBottom: "0"}}>
 						{headerRow.map((iconName, iconIndex) => (
 							<div
 							key={iconName}
-							className={`ats-single-ingredient-icon icon`}
+							className={iconClass(iconName, iconIndex)}
 							onClick={() => handleIconClick(iconName)}
 							>
 								<img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
@@ -901,18 +949,21 @@
 						))}
 						</div>
 
-					  {grid.map((row, rowIndex) => (
-						<div className='icon-row' key={rowIndex}>
+					  {groups.map(group => (
+						<div key={group.name} className='overlap-group' role='group' aria-label={group.name}>
+						{group.rows.map(row => (
+						<div className='icon-row' key={row[0]}>
 						  {row.map((iconName, iconIndex) => (
 							<div
 							  key={iconIndex}
-							  className={`ats-single-ingredient-icon icon`}
-							  style={(iconIndex == 0) ? {borderRight: "solid 4px #4f3c21", paddingRight: "15px", marginBottom: "0", marginTop: "0"} : {}}
+							  className={iconClass(iconName, iconIndex)}
 							  onClick={() => handleIconClick(iconName)}
 							>
 							  <img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
 							</div>
 						  ))}
+						</div>
+					  ))}
 						</div>
 					  ))}
 					</div>
@@ -1389,7 +1440,7 @@
 								<div className="grid-header ats-infobox-header-title">Have Recipe Building</div>
 								<div className="icon-grid-wrapper">
 									<div style={{ display: 'flex', flexDirection: 'column', padding: '8px 0' }}>
-										<div style={{ fontWeight: 600, marginBottom: 4 }}>Transitional</div>
+										<div className="suggestor-subheading">Transitional</div>
 										{TRANSITIONAL_FOR_NEEDED.map(good => (
 											<label key={good} className="suggestor-raw-resource">
 												<input
@@ -1409,7 +1460,7 @@
 												<span>{GOODS[good] ? GOODS[good].displayName : good}</span>
 											</label>
 										))}
-										<div style={{ fontWeight: 600, marginTop: 12, marginBottom: 4 }}>Needed goods</div>
+										<div className="suggestor-subheading">Needed goods</div>
 										{NEEDED_GOODS.map(good => (
 											<label key={good} className="suggestor-raw-resource">
 												<input
@@ -1429,7 +1480,7 @@
 												<span>{GOODS[good] ? GOODS[good].displayName : good}</span>
 											</label>
 										))}
-										<div style={{ fontWeight: 600, marginTop: 12, marginBottom: 4 }}>Service Buildings</div>
+										<div className="suggestor-subheading">Service Buildings</div>
 										{SERVICE_BUILDINGS.map(bid => (
 											<label key={bid} className="suggestor-raw-resource">
 												<input
@@ -1448,7 +1499,7 @@
 												<span>{BUILDINGS[bid] ? BUILDINGS[bid].displayName : bid}</span>
 											</label>
 										))}
-										<div style={{ fontWeight: 600, marginTop: 12, marginBottom: 4 }}>Other</div>
+										<div className="suggestor-subheading">Other</div>
 										{OTHER_GOODS.map(good => (
 											<label key={good} className="suggestor-raw-resource">
 												<input
