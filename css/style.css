@@ -155,13 +155,13 @@ hr {
 }
 
 /*
- * Lower-half buttons (tabs, Buildings filters, Best Buildings' Flawless toggle) share one game style:
+ * Lower-half buttons (tabs, Buildings filters, Best Buildings' Haunted Ruins toggle) share one game style:
  * dark green, gold small caps, thin brown border. The selected one gets a yellow edge and glow.
  */
 .tabs button,
 button.cat-active,
 button.cat-inactive,
-button.flawless-toggle {
+button.ruins-toggle {
 	color: var(--ats-gold);
 	background-color: #081007;
 	border: 1px solid var(--ats-brown);
@@ -177,14 +177,14 @@ button.flawless-toggle {
 .tabs button:hover,
 button.cat-active:hover,
 button.cat-inactive:hover,
-button.flawless-toggle:hover {
+button.ruins-toggle:hover {
 	color: var(--ats-bright-gold);
 	border-color: var(--ats-gold);
 }
 
 .tabs button.active,
 button.cat-active,
-button.flawless-toggle.flawless-toggle-active {
+button.ruins-toggle.ruins-toggle-active {
 	color: var(--ats-yellow);
 	background-color: var(--ats-dark-brown);
 	border-color: var(--ats-yellow);
@@ -194,7 +194,7 @@ button.flawless-toggle.flawless-toggle-active {
 .tabs button:focus-visible,
 button.cat-active:focus-visible,
 button.cat-inactive:focus-visible,
-button.flawless-toggle:focus-visible {
+button.ruins-toggle:focus-visible {
 	outline: 2px solid var(--ats-bright-blue);
 	outline-offset: 2px;
 }
@@ -717,7 +717,7 @@ table.suggestor-table {
     margin-right: 6px;
 }
 
-button.flawless-toggle {
+button.ruins-toggle {
 	font-size: 12pt;
 	margin-left: 8px;
 	padding: 3px 10px;
@@ -741,38 +741,170 @@ button.flawless-toggle {
     border-color: var(--ats-gold, gold);
 }
 
-/* Mini species portraits next to products a selected species needs */
-.data-table td > * > img.liked-badge {
-    width: 20px;
-    height: 20px;
-    margin-left: 4px;
-    vertical-align: middle;
-    border-radius: 3px;
-    border-image: none;
-    border-width: 0;
-    cursor: default;
+/*
+ * Best Buildings table: the Buildings table's rows, with the score as a medallion on the
+ * building icon's corner and the worker bonuses under the name.
+ */
+div.best-buildings.ats-container {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 1000px;
 }
 
-.affinity-score {
-    float: right;
-    color: var(--ats-yellow, gold);
-    font-weight: bold;
-    margin: 0 8px;
+.best-table th:nth-child(1) { width: 34%; }
+.best-table th:nth-child(2) { width: 44%; }
+.best-table th:nth-child(3) { width: 22%; }
+
+/* A long product line wraps rather than spill out of its cell on narrow screens */
+.best-table td:nth-child(2) .good-line {
+	white-space: normal;
 }
 
-/* Worker bonus markers next to the building name */
-.prof-badge,
-.comfort-badge {
-    margin-left: 8px;
-    white-space: nowrap;
+.best-table .building-text {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
-.prof-badge {
-    color: var(--ats-yellow, gold);
+.best-table .icon-with-score {
+	position: relative;
+	flex: none;
+	margin: 4px 14px 4px 2px;
 }
 
-.comfort-badge {
-    color: #e88470;
+.best-table .icon-with-score img.building-icon {
+	margin: 0;
+}
+
+.best-table .chip-badge.best-score {
+	top: auto;
+	right: -12px;
+	bottom: -8px;
+	justify-content: center;
+	min-width: 26px;
+	height: 26px;
+	padding: 0 4px;
+	box-sizing: border-box;
+	border: 2px ridge var(--ats-brown);
+	border-radius: 13px;
+	color: var(--ats-yellow);
+	font-family: var(--ats-font-heading), serif;
+	font-size: 11pt;
+	font-weight: 600;
+	letter-spacing: 0;
+}
+
+/* Worker bonuses: a portrait per species, with its bonuses in a corner badge like the Suggestor's
+   Look out for icons (gears = proficiency, heart = comfort) */
+.best-table .bonus-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 9px;
+	padding-top: 3px;
+}
+
+.best-table .worker-bonus {
+	position: relative;
+	display: inline-flex;
+}
+
+.best-table .worker-bonus:has(.chip-badge:hover),
+.best-table .worker-bonus:has(.chip-badge:focus-visible) {
+	z-index: 30;
+}
+
+.best-table .worker-bonus > .worker-bonus-badge {
+	top: -6px;
+	right: -7px;
+	gap: 0;
+	padding: 0 1px;
+	border-radius: 7px;
+}
+
+/* Font Awesome moves the icon class onto the SVG it nests in the <i>, so size the <i> itself */
+.best-table .worker-bonus-badge > i {
+	width: 12px;
+	height: 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 7px;
+	line-height: 1;
+}
+
+.best-table .fa-gears {
+	color: var(--ats-yellow);
+}
+
+.best-table .fa-heart {
+	color: #e88470;
+}
+
+.best-table .tip-row > i {
+	width: 14px;
+	text-align: center;
+}
+
+.best-table .spec-tag {
+	display: inline-flex;
+	align-items: center;
+}
+
+/* The game's proficiency or comfort icon, in place of its name (no frame, like in the game) */
+.best-table .chip-badge .chip-badge-tip img.spec-icon {
+	width: 20px;
+	height: 20px;
+	object-fit: contain;
+	border: 0;
+	border-image: none;
+}
+
+/* Small species portraits, on the bonuses and after products a selected species needs:
+   the same gold frame as the goods icons, so they stand out from the background */
+.data-table td .worker-bonus > img,
+.data-table td .good-line > img.need-portrait {
+	width: 20px;
+	height: 20px;
+	border: 4px solid transparent;
+	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 2px;
+	vertical-align: middle;
+	cursor: default;
+}
+
+.best-table .good-line > img.need-portrait {
+	margin-left: 5px;
+}
+
+.best-table .grade + img.need-portrait {
+	margin-left: 10px;
+}
+
+/* No selected species needs this product */
+.best-table .good-line.unwanted {
+	opacity: 0.55;
+}
+
+/* Tooltip rows: icons and text on one line, so the box widens to fit */
+.best-table .chip-badge-tip {
+	flex-direction: column;
+	align-items: flex-start;
+	max-width: none;
+	left: 0;
+	transform: none;
+}
+
+.best-table .tip-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	white-space: nowrap;
+}
+
+.best-table .tip-total {
+	align-self: stretch;
+	border-top: 1px solid #59482d;
+	padding-top: 3px;
+	font-weight: 600;
 }
 
 .affinity-hint {

@@ -246,19 +246,11 @@
             const hasLikedProduct = (item, speciesList) =>
                 item.products.some(p => productLikedBy(p.name, speciesList).length > 0);
 
-            // Human-readable per-product breakdown of the score, for the tooltip
-            const affinityBreakdown = (item, speciesList) => {
-                const lines = item.products
-                    .map(p => ({ p, liked: productLikedBy(p.name, speciesList) }))
-                    .filter(x => x.liked.length > 0)
-                    .map(({ p, liked }) => {
-                        const stars = gradeStars(p.grade);
-                        const mult = 1 + stars;
-                        return `${p.name}: wanted by ${liked.join(', ')} (${liked.length}) × ${mult} (${stars}★ + 1 base) = ${liked.length * mult}`;
-                    });
-                lines.push(`Total: ${affinityScore(item, speciesList)}`);
-                return lines.join('\n');
-            };
+            const speciesPlural = (s) => s === 'Fox' ? 'Foxes' : `${s}s`;
+
+            // Cleansed Haunted Ruins: one-of-a-kind ★★★ versions of regular buildings
+            // https://wiki.hoodedhorse.com/Against_the_Storm/Ruins
+            const isCleansedRuin = (buildingName) => /^(Flawless|Holy|Hallowed|Purified) /.test(buildingName);
 
             // Category and building order from the wiki's List of Buildings.
             // https://wiki.hoodedhorse.com/Against_the_Storm/Buildings
@@ -1777,14 +1769,91 @@
 				);
 			};
 
+			// The products that count towards a building's score: who needs each, and its share
+			const scoreParts = (item, species) => item.products
+				.map(p => ({ p, liked: productLikedBy(p.name, species), mult: 1 + gradeStars(p.grade) }))
+				.filter(x => x.liked.length > 0);
+
+			// Spoken version of the score tooltip, for screen readers
+			const scoreLabel = (item, species, score) => [
+				`Score ${score}`,
+				...scoreParts(item, species).map(({ p, liked, mult }) =>
+					`${p.name}${p.grade ? ` ${gradeLabel(p.grade)}` : ''}, needed by ${liked.join(', ')}: ${liked.length} × ${mult} = ${liked.length * mult}`),
+			].join('. ');
+
+			// Per-product breakdown of a building's score
+			const ScoreTip = ({ item, species, score }) => (
+				<React.Fragment>
+					{scoreParts(item, species).map(({ p, liked, mult }) => (
+						<span key={p.name} className="tip-row">
+							<img src={p.icon_path} alt="" />{p.name}{p.grade ? ` ${p.grade}` : ''}:
+							{liked.map(s => <img key={s} src={SPECIES_ICONS[s]} alt={s} />)}
+							{` ${liked.length} × ${mult} = ${liked.length * mult}`}
+						</span>
+					))}
+					<span className="tip-row tip-total">Score {score}: species that need it × (stars + 1)</span>
+				</React.Fragment>
+			);
+
+			// The game shows these building tags as icons, not names (icons from the wiki's species pages)
+			const SPECIALIZATION_ICONS = {
+				'Farming': 'img/specializations/Icon_Spec_Farm_64x64.png',
+				'Woodworking': 'img/specializations/Icon_Spec_Wood_64x64.png',
+				'Meat production': 'img/specializations/Icon_Spec_Meat_64x64.png',
+				'Alchemy': 'img/specializations/Icon_Spec_Alchemy_64x64.png',
+				'Masonry': 'img/specializations/Icon_Spec_Masonry.png',
+				'Metallurgy': 'img/specializations/Icon_Spec_Metallurgy_64x64.png',
+				'Brewing': 'img/specializations/Icon_Spec_Brewing_64x64.png',
+				'Engineering': 'img/specializations/Icon_Spec_Gear_64x64.png',
+				'Warmth': 'img/specializations/Icon_Spec_Fire_64x64.png',
+				'Tailoring': 'img/specializations/Icon_Spec_Cloth_64x64.png',
+				'Cooperation': 'img/specializations/Icon_Spec_Cooperation_64x64.png',
+				'Rainwater': 'img/specializations/Icon_Spec_RainWater_64x64.png',
+			};
+
+			const PROFICIENCY_EFFECT = '10% chance of double yield';
+			const comfortEffect = (s) => s === 'Fox'
+				? '+5 Resolve when 3 or more Foxes work here'
+				: '+5 Resolve while working here';
+
+			// A species' portrait under a building's name, with its worker bonuses in the corner:
+			// gears for proficiency, a heart for comfort
+			const WorkerBonus = ({ species, proficient, comforted }) => {
+				const lines = [
+					proficient && { icon: 'fa-gears', kind: 'proficiency', tag: SPECIES_PROFICIENCY[species], effect: PROFICIENCY_EFFECT },
+					comforted && { icon: 'fa-heart', kind: 'comfort', tag: SPECIES_COMFORT[species], effect: comfortEffect(species) },
+				].filter(Boolean);
+				return (
+					<span className="worker-bonus">
+						<img src={SPECIES_ICONS[species]} alt={species} />
+						<Badge className="worker-bonus-badge"
+							label={lines.map(l => `${species} ${l.kind} (${l.tag}): ${l.effect}`).join('. ')}
+							tip={lines.map(l => (
+								<span key={l.icon} className="tip-row">
+									<i className={`fa-solid ${l.icon}`} aria-hidden="true"></i>
+									{species} {l.kind}
+									<span className="spec-tag"><img className="spec-icon" src={SPECIALIZATION_ICONS[l.tag]} alt={l.tag} title={l.tag} />:</span>
+									{l.effect}
+								</span>
+							))}>
+							{lines.map(l => <i key={l.icon} className={`fa-solid ${l.icon}`} aria-hidden="true"></i>)}
+						</Badge>
+					</span>
+				);
+			};
+
 			// Best buildings for the species selected in the Species Needs grid above
 			const BestBuildings = () => {
 				const [species, setSpecies] = useState(window.currentSpeciesSelection || []);
-				const [includeFlawless, setIncludeFlawless] = useState(loadSavedState().includeFlawless === true);
+				// Earlier versions saved this as includeFlawless
+				const [includeRuins, setIncludeRuins] = useState(() => {
+					const saved = loadSavedState();
+					return typeof saved.includeRuins === 'boolean' ? saved.includeRuins : saved.includeFlawless === true;
+				});
 
 				useWindowEvent('speciesSelection', (e) => setSpecies(e.detail || []));
 
-				useEffect(() => saveState({ includeFlawless }), [includeFlawless]);
+				useEffect(() => saveState({ includeRuins, includeFlawless: undefined }), [includeRuins]);
 
 				// Toggle through the Species Needs grid so both stay in sync
 				const toggleSpecies = (name) => {
@@ -1797,7 +1866,7 @@
 				};
 
 				const ranked = FORMATTED_BUILDINGS
-					.filter(item => (includeFlawless || !item.building.startsWith('Flawless '))
+					.filter(item => (includeRuins || !isCleansedRuin(item.building))
 						&& (hasLikedProduct(item, species) || workerBonusCount(item, species) > 0))
 					.sort((a, b) =>
 						affinityScore(b, species) - affinityScore(a, species)
@@ -1805,7 +1874,7 @@
 						|| (a.building < b.building ? -1 : a.building > b.building ? 1 : 0));
 
 				return (
-					<div className="ats-container icon-grid" style={{ minWidth: '850px' }}>
+					<div className="ats-container icon-grid best-buildings">
 						<div className="grid-header ats-infobox-header-title">
 							{"Best Buildings"}
 							<SacredGroveWarning count={species.length} />
@@ -1819,17 +1888,17 @@
 										onClick={() => toggleSpecies(s)} />
 								))}
 								<button type="button"
-									aria-pressed={includeFlawless}
-									title="Include rare Flawless buildings in the rankings"
-									className={`flawless-toggle${includeFlawless ? ' flawless-toggle-active' : ''}`}
-									onClick={() => setIncludeFlawless(current => !current)}>
-									Flawless: {includeFlawless ? 'On' : 'Off'}
+									aria-pressed={includeRuins}
+									title="Include the one-of-a-kind buildings from cleansing Haunted Ruins (Flawless, Holy, Hallowed and Purified versions) in the rankings"
+									className={`ruins-toggle${includeRuins ? ' ruins-toggle-active' : ''}`}
+									onClick={() => setIncludeRuins(current => !current)}>
+									Haunted Ruins: {includeRuins ? 'On' : 'Off'}
 								</button>
 							</div>
 							{species.length === 0 ?
 								<div className="affinity-hint">Select up to 4 species (4 requires Sacred Grove; here or in the Species Needs grid) to rank buildings by how well their products and worker bonuses match those species.</div>
 							:
-								<table className="data-table">
+								<table className="data-table buildings-table best-table">
 									<thead>
 										<tr>
 											<th>Building</th>
@@ -1838,49 +1907,55 @@
 										</tr>
 									</thead>
 									<tbody>
-										{ranked.map(item => (
+										{ranked.map(item => {
+											const score = affinityScore(item, species);
+											const proficient = proficientSpecies(item, species);
+											const comforted = comfortedSpecies(item, species);
+											const bonusSpecies = species.filter(s => proficient.includes(s) || comforted.includes(s));
+											return (
 											<tr key={item.id}>
 												<td>
-													<img src={item.icon} alt={item.building} style={{ maxWidth: '60px', maxHeight: '60px', margin: '10px' }} />
-													{item.building}
-													<span className="affinity-score" title={affinityBreakdown(item, species)}>{affinityScore(item, species)}</span>
-													{proficientSpecies(item, species).length > 0 &&
-														<span className="prof-badge" title={proficientSpecies(item, species).map(s => `${s} proficiency (${SPECIES_PROFICIENCY[s]}): 10% chance of double yield`).join('\n')}>
-															{'⚒ '}
-															{proficientSpecies(item, species).map(s => (
-																<img key={s} src={SPECIES_ICONS[s]} alt={s} className="liked-badge"/>
-															))}
+													<div className="building-cell">
+														<span className="icon-with-score">
+															<img className="building-icon" src={item.icon} alt={item.building} />
+															<Badge className="best-score" label={scoreLabel(item, species, score)} tip={<ScoreTip item={item} species={species} score={score} />}>
+																{score}
+															</Badge>
 														</span>
-													}
-													{comfortedSpecies(item, species).length > 0 &&
-														<span className="comfort-badge" title={comfortedSpecies(item, species).map(s =>
-															s === 'Fox'
-																? `${s} comfort (${SPECIES_COMFORT[s]}): +5 Resolve when 3 or more Foxes work here`
-																: `${s} comfort (${SPECIES_COMFORT[s]}): +5 Resolve while working here`
-														).join('\n')}>
-															{'♥ '}
-															{comfortedSpecies(item, species).map(s => (
-																<img key={s} src={SPECIES_ICONS[s]} alt={s} className="liked-badge"/>
-															))}
-														</span>
-													}
+														<div className="building-text">
+															<span className="building-name">{item.building}</span>
+															{bonusSpecies.length > 0 &&
+																<span className="bonus-row">
+																	{bonusSpecies.map(s => (
+																		<WorkerBonus key={s} species={s}
+																			proficient={proficient.includes(s)}
+																			comforted={comforted.includes(s)} />
+																	))}
+																</span>
+															}
+														</div>
+													</div>
 												</td>
 												<td>
-													{item.products.map((productItem, productIndex) => (
-													  <div key={productIndex}><img onClick={() => handleIconClick(productItem.name)} alt={productItem.name} src={productItem.icon_path} width="30" height="30"/> {productItem.name} {productItem.grade ? "(" + productItem.grade + ")" : ""}
-														{productLikedBy(productItem.name, species).map(s => (
-															<img key={s} src={SPECIES_ICONS[s]} alt={s} title={`${s}s need this`} className="liked-badge"/>
-														))}
-													  </div>
-													))}
+													{item.products.map((productItem, productIndex) => {
+														const likedBy = productLikedBy(productItem.name, species);
+														return (
+														  <div key={productIndex} className={`good-line${likedBy.length ? '' : ' unwanted'}`}><img onClick={() => handleIconClick(productItem.name)} alt={productItem.name} src={productItem.icon_path} width="30" height="30"/> {productItem.name}{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}
+															{likedBy.map(s => (
+																<img key={s} src={SPECIES_ICONS[s]} alt={s} title={`${speciesPlural(s)} need this`} className="need-portrait"/>
+															))}
+														  </div>
+														);
+													})}
 												</td>
 												<td>
 													{item.cost.map((costItem, costIndex) => (
-													  <div key={costIndex}>{costItem.amount} <img alt={costItem.name} onClick={() => handleIconClick(costItem.name)} src={costItem.icon_path} width="30" height="30"/> {costItem.name}</div>
+													  <div key={costIndex} className="good-line"><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} onClick={() => handleIconClick(costItem.name)} src={costItem.icon_path} width="30" height="30"/> {costItem.name}</div>
 													))}
 												</td>
 											</tr>
-										))}
+											);
+										})}
 									</tbody>
 								</table>
 							}
