@@ -132,9 +132,14 @@ body {
     text-align: center;
 }
 
+/* Side margins: 50px from about 1320px, where the widest content (the 1200px Suggestor) stops
+   growing, shrinking in a straight line to 8px (the phone layouts' margin) at 1210px. That's just
+   wide enough to keep the Suggestor's three columns (a 1170px frame, plus border, margins and a
+   scrollbar), so the margins give up their space before the layout has to change.
+   Top and bottom stay at 50px. */
 @media only screen and (min-width: 768px) {
     body {
-        margin: 50px;
+        margin: 50px clamp(8px, (100vw - 1210px) * 0.38 + 8px, 50px);
     }
 }
 
@@ -205,6 +210,8 @@ button.flawless-toggle:focus-visible {
 }
 
 div.content {
+    /* Lets panels inside lay out by the frame's width (see the Suggestor panel) */
+    container: page / inline-size;
     background: #f8f9fa;
     border: solid #eaecf0;
     border-width: 1px 1px 0.2em;
@@ -590,6 +597,110 @@ table.buildings-table {
 	min-width: 1.6em;
 	margin-right: 6px;
 	text-align: right;
+}
+
+/*
+ * Suggestor table layout: the same carved, separated rows as the Buildings table,
+ * with fixed column widths so ticking resources doesn't shift the columns.
+ */
+table.suggestor-table {
+	border-collapse: separate;
+	border-spacing: 0 8px;
+	margin-top: 4px;
+	table-layout: fixed;
+}
+
+/* Measured at the widest layout (a 664px table): the longest card name ("Pickled Goods") and the
+   open trees need about 205px, two portraits per row 82px plus padding, and the longest Look out
+   for line about 300px */
+.suggestor-table th:nth-child(1) { width: 34%; }
+.suggestor-table th:nth-child(2) { width: 15%; }
+.suggestor-table th:nth-child(3) { width: 51%; }
+
+.suggestor-table th {
+	padding: 2px 8px 4px;
+	cursor: default;
+}
+
+.suggestor-table th:hover {
+	color: var(--ats-color-tan-headings-text);
+}
+
+.suggestor-table td {
+	border: none;
+	border-top: 2px ridge var(--ats-brown);
+	border-bottom: 2px ridge var(--ats-brown);
+	padding: 6px 8px;
+	vertical-align: middle;
+}
+
+.suggestor-table td:first-child {
+	border-left: 2px ridge var(--ats-brown);
+}
+
+.suggestor-table td:last-child {
+	border-right: 2px ridge var(--ats-brown);
+}
+
+/* Needed good: framed icon with the name beside it, the ingredient boxes below */
+.suggestor-table .item-cell {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin-bottom: 4px;
+}
+
+.suggestor-table img.item-icon {
+	flex: none;
+	width: 44px;
+	height: 44px;
+	margin: 4px 12px 4px 2px;
+}
+
+.suggestor-table .item-name {
+	color: var(--ats-color-white);
+	font-family: var(--ats-font-heading), serif;
+	font-size: 13pt;
+	font-weight: 500;
+	font-variant: small-caps;
+	text-transform: none;
+	letter-spacing: 0.08em;
+}
+
+/* Species: portraits two per row, so three or four make a tidy block; names show on hover */
+.suggestor-table .species-strip {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	max-width: 82px; /* two 38px framed portraits and the gap */
+}
+
+.suggestor-table .species-strip img {
+	margin: 0;
+}
+
+.suggestor-table .species-strip img.suggestor-dimmed-portrait {
+	opacity: 0.25;
+}
+
+/* Look out for: sentence case reads better than all caps for these short phrases */
+.suggestor-table .look-out-for-item {
+	text-transform: none;
+	font-size: 10.5pt;
+	letter-spacing: 0.04em;
+}
+
+/* The row good's own status badge sits on the corner of the big item icon */
+.suggestor-table .item-cell > .chip-badge {
+	top: 0;
+	left: 36px;
+	right: auto;
+}
+
+/* Game-coloured checkboxes in the Suggestor's side lists */
+.suggestor-raw-resource input[type="checkbox"] {
+	accent-color: var(--ats-yellow);
+	cursor: pointer;
 }
 
 /* Species affinity picker above the buildings table */
@@ -1062,8 +1173,12 @@ div.ats-container.needs-grid {
 	border-radius: 3px;
 }
 
-.sacred-grove-warning::after {
-	content: attr(data-tooltip);
+/* The same tooltip also names the Suggestor's ingredient chips (.hover-tip), and, as a real element
+   so it can hold icons, explains their status badges (.chip-badge-tip).
+   It shows as soon as the pointer arrives, unlike a title attribute's long browser delay. */
+.sacred-grove-warning::after,
+.hover-tip::after,
+.chip-badge-tip {
 	position: absolute;
 	top: calc(100% + 6px);
 	left: 50%;
@@ -1091,10 +1206,50 @@ div.ats-container.needs-grid {
 	transition: opacity 0.15s ease;
 }
 
+.sacred-grove-warning::after,
+.hover-tip::after {
+	content: attr(data-tooltip);
+}
+
 .sacred-grove-warning:hover::after,
-.sacred-grove-warning:focus::after {
+.sacred-grove-warning:focus::after,
+.hover-tip:hover::after,
+.hover-tip:focus-visible::after,
+.chip-badge:hover > .chip-badge-tip,
+.chip-badge:focus-visible > .chip-badge-tip {
 	opacity: 1;
 	visibility: visible;
+}
+
+/* "Satisfied by" / "Required blueprints:" followed by the goods' icons, wrapping when long */
+.chip-badge-tip {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+}
+
+.chip-badge .chip-badge-tip img {
+	width: 20px;
+	height: 20px;
+	border: 2px solid transparent;
+	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 1px;
+}
+
+/* Raise the hovered chip (with its badge) or badge so its tooltip sits above the chips and
+   branches around it */
+.ingredient-slot:hover,
+.ingredient-slot:focus-within,
+.chip-badge:hover,
+.chip-badge:focus-visible {
+	z-index: 30;
+}
+
+/* Pointing at a badge shows only the badge's tooltip, not the chip's as well */
+.ingredient-slot:has(> .chip-badge:hover) > .hover-tip::after,
+.ingredient-slot:has(> .chip-badge:focus-visible) > .hover-tip::after {
+	opacity: 0;
+	visibility: hidden;
 }
 
 /* Other */
@@ -1203,8 +1358,9 @@ input:checked + .slider:before {
     z-index: 1;
     width: 250px;
     bottom: 130%;
-    left: 50%;
-    margin-left: -125px;
+    /* The switch sits at the right end of the Ingredient Grid's header, so the tooltip opens
+       leftwards; centred, half of it hung past the page edge and made the page scroll sideways */
+    right: 0;
 }
 
 .tooltip:hover .tooltiptext {
@@ -1255,15 +1411,6 @@ input:checked + .slider:before {
 	cursor: pointer;
 }
 
-.suggestor-dimmed img {
-	opacity: 0.2;
-}
-
-.suggestor-dimmed span {
-	opacity: 0.5;
-	font-style: italic;
-}
-
 table.data-table tr.suggestor-row-dimmed td {
 	opacity: 0.5;
 	font-style: italic;
@@ -1273,63 +1420,121 @@ table.data-table tr.suggestor-row-dimmed td img {
 	opacity: 0.2;
 }
 
-/* Ingredient tree checkboxes */
-.ingredient-tree-container {
+/* Suggestor ingredient tree as an outline: one slot per line, sub-recipes indented beneath */
+.ingredient-tree {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	align-items: flex-start;
+	gap: 5px;
 	margin-top: 6px;
 }
 
-.ingredient-tree-row {
-	display: flex;
-	align-items: flex-start;
-	gap: 4px;
-}
-
-.ingredient-tree-columns {
-	display: flex;
-	gap: 8px;
-	align-items: flex-start;
-}
-
-.ingredient-tree-column {
-	min-width: 0;
+.ingredient-branch {
 	display: flex;
 	flex-direction: column;
-	align-items: stretch;
+	align-items: flex-start;
+	min-width: 0;
 }
 
-.ingredient-tree-column > .ingredient-tree-container {
-	margin-top: 4px;
+/* A sub-recipe hangs under its chip, with a thin line showing which chip it belongs to */
+.ingredient-branch > .ingredient-tree {
+	margin: 4px 0 0 8px;
+	padding-left: 8px;
+	border-left: 1px solid var(--ats-color-brown-divider);
 }
 
+/* A tree chip and its corner badge: the badge is a sibling so it isn't inside a chip that acts as
+   a button. (Not .ingredient-chip: that's the Ingredient Grid's selected-ingredient chip.) */
+.ingredient-slot {
+	position: relative;
+	display: inline-flex;
+}
+
+/* One ingredient slot of a recipe: a small coloured chip sized to its contents (not a full-width bar) */
 .ingredient-group-box {
+	position: relative;
 	display: inline-flex;
 	align-items: center;
-	gap: 2px;
-	padding: 2px 4px;
-	border-radius: 3px;
-	min-width: 28px;
-	height: 28px;
+	gap: 4px;
+	padding: 3px 7px 3px 5px;
+	border-radius: 4px;
+	min-width: 34px;
+	min-height: 36px;
 	box-sizing: border-box;
 }
 
-.ingredient-group-box .group-check {
-	color: #15cf00;
-	font-size: 14px;
-}
-
-.ingredient-group-box img {
-	width: 24px;
-	height: 24px;
+.ingredient-group-box[data-tooltip] {
 	cursor: pointer;
 }
 
-.ingredient-group-raw-alt {
+.ingredient-group-box.ingredient-foldable:focus-visible {
+	outline: 2px solid var(--ats-yellow);
+	outline-offset: 2px;
+}
+
+/* The only option for a slot, shown before it can be made: no check mark, dimmed icon */
+.ingredient-group-box.ingredient-missing > img {
+	opacity: 0.45;
+}
+
+/* Top level of the tree: the slots sit in one row; open branches hang under their chip */
+.ingredient-tree.ingredient-tree-top {
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 8px 10px;
+}
+
+/* Status badge in a chip's corner: a check (fully satisfied) or a hammer (needs a blueprint) */
+.chip-badge {
+	position: absolute;
+	top: -8px;
+	right: -8px;
+	display: inline-flex;
+	align-items: center;
+	gap: 1px;
+	padding: 1px;
+	border-radius: 9px;
+	background: rgba(8, 16, 7, 0.85);
+	cursor: help;
+}
+
+.chip-badge:has(.chip-badge-count) {
+	padding-right: 3px;
+}
+
+.chip-badge .fa-check,
+.chip-badge .fa-hammer {
+	width: 16px;
+	height: 16px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	font-size: 10px;
-	opacity: 0.85;
-	margin-left: 2px;
+}
+
+.chip-badge-done .fa-check {
+	color: #15cf00;
+}
+
+.chip-badge-blueprint .fa-hammer,
+.look-out-badge .fa-hammer {
+	color: var(--ats-yellow);
+}
+
+.chip-badge-count {
+	font-size: 10px;
+	line-height: 1;
+	color: var(--ats-color-white);
+}
+
+/* Goods icons in the Suggestor get the same gold frame as icons elsewhere */
+.ingredient-group-box img,
+.suggestor-table .look-out-for-item img {
+	width: 22px;
+	height: 22px;
+	border: 3px solid transparent;
+	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 1px;
+	cursor: pointer;
 }
 
 .look-out-for-item {
@@ -1338,12 +1543,89 @@ table.data-table tr.suggestor-row-dimmed td img {
 	line-height: 1.5;
 }
 
-.look-out-for-raw-group {
+/* Icons wrap onto a new line when there are many; the label ("One of") never breaks */
+.look-out-for-group {
 	display: inline-flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 2px;
 	padding: 2px 4px;
 	border-radius: 3px;
+}
+
+.look-out-for-group > span:first-child {
+	white-space: nowrap;
+	margin-right: 2px;
+}
+
+/* Service buildings and blueprints: same chip as a slot's "One of" line, in a neutral tint */
+.look-out-for-service,
+.look-out-for-blueprint {
+	background-color: rgba(226, 205, 157, 0.12);
+}
+
+/* A made good that isn't ready: a small pill on the icon's corner with a hammer (needs a
+   blueprint) and/or a ring (still needs ingredients), explained on hover */
+.look-out-icon {
+	position: relative;
+	display: inline-flex;
+	margin: 0 1px;
+}
+
+.look-out-icon:has(.chip-badge:hover),
+.look-out-icon:has(.chip-badge:focus-visible) {
+	z-index: 30;
+}
+
+.look-out-icon > .look-out-badge {
+	top: -6px;
+	right: -7px;
+	gap: 0;
+	padding: 0 1px;
+	border-radius: 7px;
+}
+
+.look-out-badge .fa-hammer,
+.look-out-badge .look-out-ring {
+	width: 12px;
+	height: 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 7px;
+}
+
+.look-out-badge .look-out-ring {
+	width: 10px;
+	height: 10px;
+	margin: 1px;
+	color: #9fd3ff;
+}
+
+/* One row per line of the tooltip, each kept on one line (a five-icon row is wider than the
+   shared tooltip's 260px cap) */
+.look-out-badge .chip-badge-tip {
+	flex-direction: column;
+	align-items: flex-start;
+	max-width: none;
+}
+
+.look-out-tip-row {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	white-space: nowrap;
+}
+
+.suggestor-table .look-out-badge .chip-badge-tip img {
+	width: 20px;
+	height: 20px;
+	border-width: 2px;
+	cursor: default;
+}
+
+.suggestor-table .look-out-for-item img.service-building-icon {
+	cursor: default;
 }
 
 .need-missing-count {
@@ -1351,10 +1633,99 @@ table.data-table tr.suggestor-row-dimmed td img {
 	opacity: 0.85;
 }
 
+/*
+ * Suggestor panel: a grid of three areas that always fits inside the panel's frame.
+ * Wide: raw resources | table | blueprints, with the table taking the spare width.
+ * When the frame is narrower than 1170px (the narrowest the three columns fit without wrapping
+ * "Pickled Goods" or overflowing a cell): the two lists side by side on top, the table full width
+ * underneath. This goes by the frame's own width (a container query on div.content), not the
+ * window's, so the page's side margins shrink first and the layout only changes once they're gone.
+ */
 .suggestor-main.ats-container {
-	padding-left: 4px;
-	padding-right: 4px;
-	border-image-outset: 0px 2px 0px 2px;
+	display: grid;
+	/* Each list fits its longest label on one line ("Clearance Water", "Crystalized Dew") */
+	grid-template-columns: minmax(170px, 232px) minmax(0, 1fr) minmax(170px, 232px);
+	grid-template-areas: "raw need have";
+	column-gap: 18px;
+	align-items: start;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 1200px;
+	min-width: 0;
+	margin: 0 auto;
+	padding: 0 18px 12px;
+}
+
+.suggestor-raw { grid-area: raw; }
+.suggestor-have { grid-area: have; }
+.suggestor-suggested-need { grid-area: need; min-width: 0; }
+
+.suggestor-side {
+	min-width: 0;
+	text-align: left;
+}
+
+.suggestor-list {
+	display: flex;
+	flex-direction: column;
+	padding: 8px 0;
+}
+
+@container page (max-width: 1169px) {
+	.suggestor-main.ats-container {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		grid-template-areas:
+			"raw have"
+			"need need";
+		row-gap: 6px;
+	}
+
+	/* The lists get room for two columns of items, so they stay short */
+	.suggestor-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		column-gap: 10px;
+	}
+
+	.suggestor-list .suggestor-subheading {
+		grid-column: 1 / -1;
+	}
+
+	/* Mid-panel heading for the table, with a divider since it no longer sits in the panel's title bar */
+	.suggestor-suggested-need > .grid-header {
+		border-top: 1px solid var(--ats-color-brown-divider);
+		padding-top: 8px;
+	}
+}
+
+/* Browsers without container queries (Safari before 16, Firefox before 110): the same rules as
+   above, by window width instead. 1209px is the window at which the frame drops below 1170px
+   once the side margins have shrunk to 8px. Keep the two blocks in step. */
+@supports not (container-type: inline-size) {
+	@media only screen and (max-width: 1209px) {
+		.suggestor-main.ats-container {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			grid-template-areas:
+				"raw have"
+				"need need";
+			row-gap: 6px;
+		}
+
+		.suggestor-list {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+			column-gap: 10px;
+		}
+
+		.suggestor-list .suggestor-subheading {
+			grid-column: 1 / -1;
+		}
+
+		.suggestor-suggested-need > .grid-header {
+			border-top: 1px solid var(--ats-color-brown-divider);
+			padding-top: 8px;
+		}
+	}
 }
 
 .suggestor-data-table {
@@ -1391,14 +1762,15 @@ table.data-table tr.suggestor-row-dimmed td img {
 
 /* Font awesome icons */
 
-h1 > a > .svg-inline--fa {
+/* The script nests each <svg> inside its <i> and moves the icon classes onto the <svg> (see index.html) */
+h1 > a .svg-inline--fa {
     font-size: 20pt;
     color: var(--ats-gold, #a79372);
     float: right;
     padding: 10px 15px 0px 0px
 }
 
-h1 > a > .svg-inline--fa:hover {
+h1 > a .svg-inline--fa:hover {
     color: var(--ats-color-white, #dedede);
 }
 
