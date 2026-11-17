@@ -200,9 +200,33 @@ button.ruins-toggle:focus-visible {
 }
 
 .tabs button {
+	min-height: 40px;    /* a comfortable tap target */
 	font-size: 14pt;
 	padding: 6px 15px;
 	margin: 0 3px;
+}
+
+/* Page & tabs, step 2: once the four tabs no longer fit on one line (about 650px with a
+   scrollbar), the buttons tighten, keeping their full height; if they still don't fit they wrap
+   onto a second line */
+@media only screen and (max-width: 679px) {
+	.tabs {
+		flex-wrap: wrap;
+		gap: 4px 0;
+		margin: 10px 0;
+	}
+
+	.tabs button {
+		font-size: 11pt;
+		padding: 4px 8px;
+		margin: 0 2px;
+	}
+}
+
+/* The tabs area never grows wider than the page, so the panels inside can fit a phone screen */
+.tabs-panel {
+	min-width: 0;
+	max-width: 100%;
 }
 
 .tab-content {
@@ -745,9 +769,15 @@ button.ruins-toggle {
  * Best Buildings table: the Buildings table's rows, with the score as a medallion on the
  * building icon's corner and the worker bonuses under the name.
  */
+/* The Buildings and Best Buildings panels fill the page up to a comfortable reading width */
+div.buildings-panel.ats-container,
 div.best-buildings.ats-container {
 	box-sizing: border-box;
 	width: 100%;
+	max-width: 850px;
+}
+
+div.best-buildings.ats-container {
 	max-width: 1000px;
 }
 
@@ -755,9 +785,33 @@ div.best-buildings.ats-container {
 .best-table th:nth-child(2) { width: 44%; }
 .best-table th:nth-child(3) { width: 22%; }
 
-/* A long product line wraps rather than spill out of its cell on narrow screens */
-.best-table td:nth-child(2) .good-line {
+/* A long product line wraps rather than spill out of its cell on narrow screens, and its
+   wrapped name stays beside the icon instead of dropping under it */
+.buildings-table td:nth-child(2) .good-line {
+	display: flex;
+	align-items: center;
 	white-space: normal;
+}
+
+/* Best Buildings' product lines also carry who needs it; several portraits wrap onto a new line */
+.best-table td:nth-child(2) .good-line {
+	flex-wrap: wrap;
+	row-gap: 2px;
+}
+
+.buildings-table td:nth-child(2) .good-line > img {
+	flex: none;
+}
+
+/* In the Buildings table the whole good (icon, amount, name) selects it in the Ingredient Grid,
+   so a card's 38 x 40px cell is all one tap target */
+.buildings-panel .buildings-table .good-line {
+	width: fit-content;
+	cursor: pointer;
+}
+
+.buildings-table td:nth-child(2) .good-line > img:first-child {
+	margin-right: 0.4em;
 }
 
 .best-table .building-text {
@@ -1096,38 +1150,103 @@ td:has(> div.ats-building-icon) {
 }
 
 /*
- * Species Needs grid sizing. Each mode sets the same named sizes; the rules below only use the names.
- *   desktop       (default)
- *   phone         (max-width: 767px)  all 7 columns fit on a 360px-wide screen
- *   narrow phone  (max-width: 359px)  all 7 columns still fit down to 320px
- * --columns (the longest row) is set by NEEDS_GRID_COLUMNS in index.html.
+ * Upper half (Ingredient Grid and Species Needs) sizing. Both panels set the same named sizes;
+ * the rules below only use the names. Steps, widest first (window widths, allowing for a
+ * desktop scrollbar):
+ *   desktop      (default)            side by side, which needs about 1470px
+ *   step 1       (max-width: 1479px)  panel padding tightens
+ *   step 2       (max-width: 1459px)  icon spacing tightens: side by side down to about 1160px
+ *   step 3       (max-width: 1259px)  the recipe hint drops
+ *   step 4       (max-width: 1159px)  the panels stack (UPPER_STACK_QUERY in index.html)
+ *   step 5       (max-width: 645px)   icons shrink to about 44px per cell; 40px below 360px
+ *   step 6       (narrower)           the Ingredient Grid wraps to fewer columns by itself
+ * Species Needs keeps all 7 columns down to 320px. --columns (its longest row) is set by
+ * NEEDS_GRID_COLUMNS in index.html; the Ingredient Grid's 8 columns by --ig-columns.
  */
-.needs-grid {
+.needs-grid,
+.ingredient-grid {
     --icon-size: 50px;
     --icon-padding: 10px;
     --icon-gap: 5px;
+    --panel-padding: 12px;
+}
+
+.needs-grid {
     --ring-margin: 2px;
     --ring-t: 4px;    /* species ring thickness */
-    --panel-padding: 12px;
     /* One icon cell: image, padding and species-ring margin on both sides, plus the gap around it */
     --icon-cell: calc(var(--icon-size) + 2 * var(--icon-padding) + 2 * var(--ring-margin) + 2 * var(--icon-gap));
 }
 
-@media only screen and (max-width: 767px) {    /* phone */
-    .needs-grid {
-        --icon-size: 25px;
-        --icon-padding: 4px;
-        --icon-gap: 2px;
-        --ring-t: 3px;
+.ingredient-grid {
+    --ig-columns: 8;
+    /* One icon cell: image and its 2px side margins (the frame rule above), padding, gap */
+    --icon-cell: calc(var(--icon-size) + 4px + 2 * var(--icon-padding) + 2 * var(--icon-gap));
+}
+
+@media only screen and (max-width: 1479px) {
+    .needs-grid,
+    .ingredient-grid {
         --panel-padding: 6px;
     }
 }
 
-@media only screen and (max-width: 359px) {    /* narrow phone */
-    .needs-grid {
-        --icon-padding: 2px;
+@media only screen and (max-width: 1459px) {
+    .needs-grid,
+    .ingredient-grid {
+        --icon-padding: 6px;
+        --icon-gap: 2px;
+    }
+}
+
+@media only screen and (max-width: 1259px) {
+    .ingredient-grid .grid-legend {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 645px) {
+    .needs-grid,
+    .ingredient-grid {
+        --icon-size: 30px;
+        --icon-padding: 3px;
+        --ring-t: 3px;
+    }
+}
+
+@media only screen and (max-width: 359px) {
+    .needs-grid,
+    .ingredient-grid {
+        --icon-size: 28px;
         --icon-gap: 1px;
     }
+
+    /* The panels' outer margins give up their room too, so 7 cells of 40px fit a 320px screen */
+    #block_1 .container-block-item {
+        margin: 10px 4px;
+    }
+}
+
+/* The Ingredient Grid keeps 8 columns while there's room, so the goods stay where you know them */
+div.ingredient-grid.ats-container {
+    max-width: none;
+    padding: 0 var(--panel-padding);
+}
+
+.ingredient-grid .icon-row {
+    justify-content: center;
+    max-width: calc(var(--ig-columns) * var(--icon-cell));
+    margin: 0 auto;
+}
+
+.ingredient-grid .icon {
+    margin: var(--icon-gap);
+    padding: var(--icon-padding);
+}
+
+.ingredient-grid .icon img {
+    width: var(--icon-size);
+    height: var(--icon-size);
 }
 
 div.ats-container.needs-grid {
@@ -1160,7 +1279,41 @@ div.ats-container.needs-grid {
     border-top: 1px solid var(--ats-color-brown-divider);
 }
 
-/* Species Needs Overlap table: header and need rows share the same columns */
+/* Species Needs Overlap table: header and need rows share the same columns.
+   Smaller icons on phones, like the Species Needs grid, so all 8 columns fit */
+div.overlap-grid.ats-container {
+	box-sizing: border-box;
+	max-width: 800px;
+}
+
+/* Desktop keeps the earlier 740px minimum, giving way just before it would overflow the page */
+@media only screen and (min-width: 768px) {
+	div.overlap-grid.ats-container {
+		min-width: min(740px, 100vw - 50px);
+	}
+}
+
+@media only screen and (max-width: 767px) {    /* phone: fits a 360px screen */
+	div.overlap-grid.ats-container {
+		padding: 0 6px;
+	}
+
+	.overlap-grid .icon {
+		margin: 1px;
+		padding: 4px;
+	}
+
+	.overlap-grid .overlap-label {
+		padding-right: 6px;
+	}
+}
+
+@media only screen and (max-width: 359px) {    /* narrow phone: fits a 320px screen */
+	.overlap-grid .icon {
+		padding: 1px;
+	}
+}
+
 .overlap-grid .icon-row {
     flex-wrap: nowrap;
     justify-content: center;
@@ -1351,6 +1504,16 @@ div.ats-container.needs-grid {
 .chip-badge:focus-visible > .chip-badge-tip {
 	opacity: 1;
 	visibility: visible;
+}
+
+/* On phones a hidden tooltip takes no space, so one near the right edge doesn't widen the page.
+   (Desktop keeps them in place, hidden, so they can fade in.) */
+@media only screen and (max-width: 767px) {
+	.sacred-grove-warning:not(:hover):not(:focus)::after,
+	.hover-tip:not(:hover):not(:focus-visible)::after,
+	.chip-badge:not(:hover):not(:focus-visible) > .chip-badge-tip {
+		display: none;
+	}
 }
 
 /* "Satisfied by" / "Required blueprints:" followed by the goods' icons, wrapping when long */
@@ -1766,12 +1929,18 @@ table.data-table tr.suggestor-row-dimmed td img {
 }
 
 /*
- * Suggestor panel: a grid of three areas that always fits inside the panel's frame.
- * Wide: raw resources | table | blueprints, with the table taking the spare width.
- * When the frame is narrower than 1170px (the narrowest the three columns fit without wrapping
- * "Pickled Goods" or overflowing a cell): the two lists side by side on top, the table full width
- * underneath. This goes by the frame's own width (a container query on div.content), not the
- * window's, so the page's side margins shrink first and the layout only changes once they're gone.
+ * Suggestor panel: a grid of three areas that always fits inside the panel's frame:
+ * raw resources | table | blueprints, with the table taking the spare width.
+ * Steps go by the frame's own width (a container query on div.content), not the window's, so the
+ * page's side margins shrink first. Narrowest first to give way:
+ *   step 1  (frame below 1200px)  panel padding and gaps tighten
+ *   step 2  (below 1010px)        list names drop: each list becomes a grid of tickable icons
+ *   (below 900px, not a visible step: the lists narrow to two icons a row and the table's
+ *                                 columns follow their content)
+ *   step 3  (below 830px)         the "One of" / "Recipes for" labels drop (the tinted chip
+ *                                 groups the options; the hammer badge marks blueprints)
+ *   step 4  (below 650px)         the lists narrow to one icon a row and their headings drop
+ * The lists never move: the three columns stay side by side at every width.
  */
 .suggestor-main.ats-container {
 	display: grid;
@@ -1803,36 +1972,152 @@ table.data-table tr.suggestor-row-dimmed td img {
 	padding: 8px 0;
 }
 
-@container page (max-width: 1169px) {
+@container page (max-width: 1199px) {
 	.suggestor-main.ats-container {
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		grid-template-areas:
-			"raw have"
-			"need need";
-		row-gap: 6px;
+		column-gap: 10px;
+		padding: 0 8px 12px;
+	}
+}
+
+@container page (max-width: 1009px) {
+	.suggestor-main.ats-container {
+		grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) minmax(96px, 150px);
 	}
 
-	/* The lists get room for two columns of items, so they stay short */
 	.suggestor-list {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-		column-gap: 10px;
+		grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+		gap: 4px;
+		justify-items: center;
 	}
 
 	.suggestor-list .suggestor-subheading {
 		grid-column: 1 / -1;
+		justify-self: stretch;
 	}
 
-	/* Mid-panel heading for the table, with a divider since it no longer sits in the panel's title bar */
-	.suggestor-suggested-need > .grid-header {
-		border-top: 1px solid var(--ats-color-brown-divider);
-		padding-top: 8px;
+	/* Each item is a 44px tap target: the icon, with the checkbox small in its corner */
+	.suggestor-raw-resource {
+		position: relative;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		gap: 0;
+	}
+
+	.suggestor-raw-resource > span {
+		display: none;
+	}
+
+	.suggestor-raw-resource input[type="checkbox"] {
+		position: absolute;
+		top: -2px;
+		right: -2px;
+		width: 13px;
+		height: 13px;
+		margin: 0;
 	}
 }
 
-/* Browsers without container queries (Safari before 16, Firefox before 110): the same rules as
-   above, by window width instead. 1209px is the window at which the frame drops below 1170px
-   once the side margins have shrunk to 8px. Keep the two blocks in step. */
+/* Where :has() works (not Firefox before 121), the icon dims until ticked and a check mark
+   replaces the checkbox, which stays in place for keyboards and screen readers, just not drawn */
+@container page (max-width: 1009px) {
+	@supports selector(:has(*)) {
+		.suggestor-raw-resource input[type="checkbox"] {
+			width: 1px;
+			height: 1px;
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		.suggestor-raw-resource:not(:has(input:checked)) img {
+			opacity: 0.45;
+		}
+
+		.suggestor-raw-resource:has(input:checked)::after {
+			content: "\2713";
+			position: absolute;
+			top: -3px;
+			right: -3px;
+			width: 15px;
+			height: 15px;
+			border-radius: 50%;
+			background: var(--ats-dark-brown);
+			border: 1px solid var(--ats-yellow);
+			color: var(--ats-yellow);
+			font-size: 10px;
+			line-height: 15px;
+			text-align: center;
+			letter-spacing: 0;
+		}
+
+		.suggestor-raw-resource:has(input:focus-visible) {
+			outline: 2px solid var(--ats-bright-blue);
+			outline-offset: 1px;
+		}
+	}
+}
+
+/* Between steps 2 and 3, no visible step: the lists narrow to two icons a row, and the table's
+   columns follow their content instead of fixed shares, so it fits a narrower space */
+@container page (max-width: 899px) {
+	.suggestor-main.ats-container {
+		grid-template-columns: 96px minmax(0, 1fr) 96px;
+	}
+
+	table.suggestor-table {
+		table-layout: auto;
+	}
+
+	.suggestor-table th:nth-child(n) {
+		width: auto;
+	}
+
+	/* "Blueprints" has to fit the narrow list; the heading wraps between its words */
+	.suggestor-side > .grid-header {
+		font-size: 11pt;
+	}
+}
+
+@container page (max-width: 829px) {
+	.suggestor-table .look-out-for-group > span:first-child {
+		display: none;
+	}
+}
+
+/* Step 4: the lists narrow to one icon a row, so the table keeps the room it needs. Their
+   headings drop (left is always raw resources, right blueprints), and the subheadings inside
+   a list ("Transitional") become plain dividers. */
+@container page (max-width: 649px) {
+	.suggestor-main.ats-container {
+		grid-template-columns: 44px minmax(0, 1fr) 44px;
+		column-gap: 8px;
+		padding: 0 6px 12px;
+	}
+
+	.suggestor-side > .grid-header {
+		display: none;
+	}
+
+	.suggestor-list .suggestor-subheading {
+		height: 0;
+		margin: 6px 0;
+		padding: 0;
+		overflow: hidden;
+	}
+}
+
+/* Narrower than the table's own minimum, it scrolls sideways inside the panel (placeholder
+   until the micro layout is designed) */
+@container page (max-width: 459px) {
+	.suggestor-suggested-need > .icon-grid-wrapper {
+		overflow-x: auto;
+	}
+}
+
+/* Browsers without container queries (Safari before 16, Firefox before 110) get none of the steps
+   above. They keep the earlier layout instead: below a 1210px window (where the three columns
+   with named lists stop fitting), the two lists sit above the table, keeping their names. */
 @supports not (container-type: inline-size) {
 	@media only screen and (max-width: 1209px) {
 		.suggestor-main.ats-container {
@@ -1841,6 +2126,8 @@ table.data-table tr.suggestor-row-dimmed td img {
 				"raw have"
 				"need need";
 			row-gap: 6px;
+			column-gap: 10px;
+			padding: 0 8px 12px;
 		}
 
 		.suggestor-list {
@@ -1929,4 +2216,254 @@ button.state-reset {
 button.state-reset:hover {
 	color: var(--ats-bright-gold);
 	border-color: var(--ats-gold);
+}
+
+/*
+ * Buildings and Best Buildings tables at narrow widths. Steps, widest first (window widths);
+ * the columns and their order never change:
+ *   frame padding tightens   Buildings below 880px, Best Buildings below 1020px
+ *   (Buildings) the Resource Gathering / Food Production buttons shorten, below 860px
+ *   (Best Buildings) the Haunted Ruins toggle wraps under the species, below about 640px
+ *   below 760px              the fixed column widths give way to widths that follow the content
+ *   below 680px              cost names drop: amount and icon
+ *   below 620px              product names drop: icon and stars (and, in Best Buildings, who
+ *                            needs it)
+ *   narrower                 the long building names ("Leatherworker") no longer fit beside
+ *                            the products: about 520px for Buildings, 560px for Best Buildings.
+ *                            Buildings turns into cards (below); Best Buildings scrolls sideways
+ *                            inside its frame for now, until its cards are designed.
+ * Below 768px the side margins are a fixed 8px, so the window width tells the frame width
+ * (less a desktop scrollbar, which the widths above allow for).
+ */
+@media only screen and (max-width: 1019px) {
+	div.best-buildings.ats-container {
+		padding: 0 4px;
+	}
+}
+
+@media only screen and (max-width: 879px) {
+	div.buildings-panel.ats-container {
+		padding: 0 4px;
+	}
+}
+
+/* Before the category buttons wrap onto a second line (about 850px), "Resource Gathering" and
+   "Food Production" shorten to "Gathering" and "Food", like the other categories' buttons */
+@media only screen and (max-width: 859px) {
+	.cat-label-extra {
+		display: none;
+	}
+}
+
+@media only screen and (max-width: 759px) {
+	table.buildings-table {
+		table-layout: auto;
+	}
+
+	.buildings-table th:nth-child(n) {
+		width: auto;
+	}
+}
+
+@media only screen and (max-width: 679px) {
+	.buildings-table td:nth-child(3) .good-name {
+		display: none;
+	}
+
+	/* The narrower cost column's header shortens from "Building Cost" to "Cost" */
+	.cost-header-building {
+		display: none;
+	}
+
+	button.ruins-toggle {
+		margin-left: 0;
+	}
+}
+
+@media only screen and (max-width: 619px) {
+	.buildings-table td:nth-child(2) .good-name {
+		display: none;
+	}
+}
+
+@media only screen and (max-width: 599px) {
+	.buildings-panel .icon-grid-wrapper,
+	.best-buildings .icon-grid-wrapper {
+		overflow-x: auto;
+	}
+}
+
+/* The products' star pills only show on the Buildings cards below */
+.grade-badge {
+	display: none;
+}
+
+/*
+ * Buildings cards, below 520px (where the table no longer fits even with every name dropped).
+ * Each row becomes a card: the building's icon and name across the top, then its products, a
+ * divider, and its costs pushed to the right edge. The goods are 38 x 40px tap targets: each
+ * product's rating sits in a pill centered on its top edge (three slots, hollow for the missing
+ * stars), each cost's amount in its top-right corner. 7 goods (the most any building has) fit a
+ * 320px screen. The header stays a row, its Costs filter over the costs.
+ */
+@media only screen and (max-width: 519px) {
+	.buildings-panel table.buildings-table,
+	.buildings-panel .buildings-table thead,
+	.buildings-panel .buildings-table tbody {
+		display: block;
+	}
+
+	.buildings-panel table.buildings-table {
+		padding: 0;
+	}
+
+	.buildings-panel .buildings-table thead tr {
+		display: flex;
+		align-items: center;
+		border-bottom: 2px solid var(--ats-color-brown-divider);
+	}
+
+	.buildings-panel .buildings-table th:nth-child(n) {
+		width: auto;
+		padding: 2px 4px 4px;
+		border-bottom: none;
+	}
+
+	.buildings-panel .buildings-table th:nth-child(3) {
+		margin-left: auto;
+	}
+
+	.buildings-panel .buildings-table tbody tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"building building"
+			"products cost";
+		margin: 8px 0;
+		padding: 6px 3px;
+		border: 2px ridge var(--ats-brown);
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+
+	.buildings-panel .buildings-table tbody td:nth-child(n) {
+		display: flex;
+		align-items: center;
+		padding: 0;
+		border: none;
+		background: none;
+	}
+
+	.buildings-panel .buildings-table tbody td:nth-child(1) { grid-area: building; padding-left: 3px; }
+	.buildings-panel .buildings-table tbody td:nth-child(2) { grid-area: products; padding: 10px 4px 0 0; }
+	.buildings-panel .buildings-table tbody td:nth-child(3) { grid-area: cost; padding-top: 10px; }
+
+	/* The divider between products and costs */
+	.buildings-panel .buildings-table tbody td:nth-child(3)::before {
+		content: "";
+		height: 30px;
+		margin-right: 4px;
+		border-left: 2px ridge var(--ats-brown);
+	}
+
+	.buildings-panel .buildings-table img.building-icon {
+		width: 30px;
+		height: 30px;
+		margin: 0 8px 0 0;
+	}
+
+	/* Slightly tighter, so the longest name (Advanced Rain Collector) stays on one line at 320px */
+	.buildings-panel .buildings-table .building-name {
+		letter-spacing: 0.06em;
+	}
+
+	.buildings-panel .buildings-table td .good-line {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		width: 38px;
+		height: 40px;
+		margin: 0;
+	}
+
+	.buildings-panel .buildings-table td .good-line > img,
+	.buildings-panel .buildings-table td:nth-child(2) .good-line > img:first-child {
+		width: 26px;
+		height: 26px;
+		margin: 0;
+	}
+
+	/* The written stars stay for screen readers; the pill shows them */
+	.buildings-panel .buildings-table .good-line .grade {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+
+	.buildings-panel .buildings-table .grade-badge {
+		position: absolute;
+		top: -5px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: inline-flex;
+		padding: 2px;
+		border-radius: 8px;
+		background: rgba(8, 16, 7, 0.9);
+		color: var(--ats-yellow);
+		font-size: 9px;
+		line-height: 1;
+		letter-spacing: 0;
+		white-space: nowrap;
+		pointer-events: none;
+	}
+
+	.grade-badge-hollow {
+		opacity: 0.75;
+	}
+
+	.buildings-panel .buildings-table .good-amount {
+		position: absolute;
+		top: -3px;
+		right: -3px;
+		min-width: 15px;
+		height: 15px;
+		margin: 0;
+		padding: 0 3px;
+		box-sizing: border-box;
+		border-radius: 8px;
+		background: rgba(8, 16, 7, 0.9);
+		color: var(--ats-color-white);
+		font-size: 10px;
+		font-weight: 600;
+		line-height: 15px;
+		letter-spacing: 0;
+		text-align: center;
+		pointer-events: none;
+	}
+
+	.buildings-panel .buildings-table tbody tr.category-row,
+	.buildings-panel .buildings-table tbody tr.empty-row {
+		display: block;
+		margin: 0;
+		padding: 0;
+		border: none;
+		background: none;
+	}
+
+	.buildings-panel .buildings-table tbody tr.category-row td,
+	.buildings-panel .buildings-table tbody tr.empty-row td {
+		display: block;
+	}
+
+	.buildings-panel .buildings-table tbody tr.category-row td {
+		padding: 10px 2px 0;
+	}
+
+	.buildings-panel .buildings-table tbody tr.empty-row td {
+		padding: 14px 10px;
+		border: 2px ridge var(--ats-brown);
+	}
 }

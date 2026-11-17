@@ -257,12 +257,30 @@
             // The Mine is listed under Resource Gathering, and the Blight Post under City Buildings before the services.
             const CATEGORY_ORDER = ['Resource Gathering', 'Extraction Building', 'Food Production', 'Industry', 'Special Building', 'City Buildings'];
             // Shorter button labels: "building" is implied in the Buildings table
-            const CATEGORY_BUTTON_LABELS = { 'Extraction Building': 'Extraction', 'Special Building': 'Special', 'City Buildings': 'City' };
+            // On narrow screens two more shorten, dropping the word in .cat-label-extra (style.css)
+            const CATEGORY_BUTTON_LABELS = {
+                'Resource Gathering': <><span className="cat-label-extra">Resource </span>Gathering</>,
+                'Extraction Building': 'Extraction',
+                'Food Production': <>Food<span className="cat-label-extra"> Production</span></>,
+                'Special Building': 'Special',
+                'City Buildings': 'City',
+            };
             const categoryButtonLabel = (category) => CATEGORY_BUTTON_LABELS[category] || category;
             // Recipe grade for screen readers: '☆' is 0 stars, '★★' is 2 stars
             const gradeLabel = (grade) => {
-                const stars = [...grade].filter(character => character === '★').length;
+                const stars = gradeStars(grade);
                 return stars === 1 ? '1 star' : `${stars} stars`;
+            };
+            // The rating as three star slots, filled then hollow, for the small-screen building cards
+            // (CSS shows it only there; the .grade beside it keeps the label for screen readers)
+            const GradeBadge = ({ grade }) => {
+                const stars = gradeStars(grade);
+                return (
+                    <span className="grade-badge" aria-hidden="true">
+                        {'★'.repeat(stars)}
+                        {stars < 3 && <span className="grade-badge-hollow">{'☆'.repeat(3 - stars)}</span>}
+                    </span>
+                );
             };
             const BUILDING_ORDER = [
                 "Woodcutters' Camp", "Stonecutters' Camp", "Harvesters' Camp", "Small Foragers' Camp", "Foragers' Camp",
@@ -438,7 +456,7 @@
                 }
 
                 return (
-                    <div className="ats-container icon-grid">
+                    <div className="ats-container icon-grid ingredient-grid">
                     <div className="grid-header ats-infobox-header-title">
                         {"Ingredient Grid"}
                         <label className="switch tooltip">
@@ -741,7 +759,7 @@
 				};
 
 				return (
-					<div className="ats-container icon-grid" style={{ minWidth: '850px' }}>
+					<div className="ats-container icon-grid buildings-panel">
 						<div className="grid-header ats-infobox-header-title">
 							{"Buildings"}
 						</div>
@@ -778,7 +796,7 @@
 											</button>
 										</th>
 										<th>{columnHeader('Products', 'Products', 'make')}</th>
-										<th>{columnHeader('Costs', 'Building Cost', 'are built with')}</th>
+										<th>{columnHeader('Costs', <><span className="cost-header-building">Building </span>Cost</>, 'are built with')}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -805,12 +823,12 @@
 											</td>
 											<td>
 												{item.products.map((productItem, productIndex) => (
-												  <div key={productIndex} className="good-line"><img onClick={() => handleIconClick(productItem.name)} alt={productItem.name} src={productItem.icon_path} width="30" height="30"/> {productItem.name}{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}</div>
+												  <div key={productIndex} className="good-line" onClick={() => handleIconClick(productItem.name)}><img alt={productItem.name} src={productItem.icon_path} width="30" height="30"/><span className="good-name"> {productItem.name}</span>{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}{productItem.grade && <GradeBadge grade={productItem.grade} />}</div>
 												))}
 											</td>
 											<td>
 												{item.cost.map((costItem, costIndex) => (
-												  <div key={costIndex} className="good-line"><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} onClick={() => handleIconClick(costItem.name)} src={costItem.icon_path} width="30" height="30"/> {costItem.name}</div>
+												  <div key={costIndex} className="good-line" onClick={() => handleIconClick(costItem.name)}><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} src={costItem.icon_path} width="30" height="30"/><span className="good-name"> {costItem.name}</span></div>
 												))}
 											</td>
 										</tr>
@@ -822,6 +840,9 @@
 					</div>
 				);
 			};
+
+			// Window widths at which the Ingredient Grid and Species Needs panels stack (see style.css)
+			const UPPER_STACK_QUERY = '(max-width: 1159px)';
 
 			// Drag and drop
 			const DraggableContainer = () => {
@@ -841,15 +862,20 @@
 
 				const [direction, setDirection] = useState("horizontal");
 
-				// Detect screen width and adjust direction dynamically
+				// The two panels stack once they no longer fit side by side, even with tightened spacing.
+				// Keep in step with the upper-half sizing in style.css (UPPER_STACK_QUERY).
 				useEffect(() => {
-					const updateDirection = () => {
-						setDirection(window.innerWidth < 1380 ? "vertical" : "horizontal");
-					};
+					const query = window.matchMedia(UPPER_STACK_QUERY);
+					const updateDirection = () => setDirection(query.matches ? "vertical" : "horizontal");
 
 					updateDirection(); // Set initial value
-					window.addEventListener("resize", updateDirection);
-					return () => window.removeEventListener("resize", updateDirection);
+					// Safari before 14 only has the older addListener / removeListener
+					if (query.addEventListener) {
+						query.addEventListener("change", updateDirection);
+						return () => query.removeEventListener("change", updateDirection);
+					}
+					query.addListener(updateDirection);
+					return () => query.removeListener(updateDirection);
 				}, []);
 
 				const onDragEnd = (result) => {
@@ -967,7 +993,7 @@
 						[need, ...speciesNames.map(species => overlappingNeeds[need].includes(species) ? species : "None")]),
 				}));
 				return (
-				  <div className="ats-container icon-grid overlap-grid" style={{ minWidth: '740px', maxWidth: '800px' }}>
+				  <div className="ats-container icon-grid overlap-grid">
 					<div className="grid-header ats-infobox-header-title">
 					  {"Species Needs Overlap"}
 					  <SacredGroveWarning count={selectedSpecies.length} />
@@ -1940,7 +1966,7 @@
 													{item.products.map((productItem, productIndex) => {
 														const likedBy = productLikedBy(productItem.name, species);
 														return (
-														  <div key={productIndex} className={`good-line${likedBy.length ? '' : ' unwanted'}`}><img onClick={() => handleIconClick(productItem.name)} alt={productItem.name} src={productItem.icon_path} width="30" height="30"/> {productItem.name}{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}
+														  <div key={productIndex} className={`good-line${likedBy.length ? '' : ' unwanted'}`}><img onClick={() => handleIconClick(productItem.name)} alt={productItem.name} src={productItem.icon_path} width="30" height="30"/><span className="good-name"> {productItem.name}</span>{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}
 															{likedBy.map(s => (
 																<img key={s} src={SPECIES_ICONS[s]} alt={s} title={`${speciesPlural(s)} need this`} className="need-portrait"/>
 															))}
@@ -1950,7 +1976,7 @@
 												</td>
 												<td>
 													{item.cost.map((costItem, costIndex) => (
-													  <div key={costIndex} className="good-line"><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} onClick={() => handleIconClick(costItem.name)} src={costItem.icon_path} width="30" height="30"/> {costItem.name}</div>
+													  <div key={costIndex} className="good-line"><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} onClick={() => handleIconClick(costItem.name)} src={costItem.icon_path} width="30" height="30"/><span className="good-name"> {costItem.name}</span></div>
 													))}
 												</td>
 											</tr>
@@ -1978,7 +2004,7 @@
 				useEffect(() => saveState({ activeTab }), [activeTab]);
 
 				return (
-					<div>
+					<div className="tabs-panel">
 						<div className="tabs">
 							{TABS.map(tab => (
 								<button
