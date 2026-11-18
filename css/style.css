@@ -803,9 +803,9 @@ div.best-buildings.ats-container {
 	flex: none;
 }
 
-/* In the Buildings table the whole good (icon, amount, name) selects it in the Ingredient Grid,
-   so a card's 38 x 40px cell is all one tap target */
-.buildings-panel .buildings-table .good-line {
+/* The whole good (icon, amount, name, who needs it) selects it in the Ingredient Grid, so a
+   card's 38 x 40px cell is all one tap target */
+.buildings-table .good-line {
 	width: fit-content;
 	cursor: pointer;
 }
@@ -916,7 +916,7 @@ div.best-buildings.ats-container {
 /* Small species portraits, on the bonuses and after products a selected species needs:
    the same gold frame as the goods icons, so they stand out from the background */
 .data-table td .worker-bonus > img,
-.data-table td .good-line > img.need-portrait {
+.data-table td .good-line img.need-portrait {
 	width: 20px;
 	height: 20px;
 	border: 4px solid transparent;
@@ -925,12 +925,25 @@ div.best-buildings.ats-container {
 	cursor: default;
 }
 
-.best-table .good-line > img.need-portrait {
-	margin-left: 5px;
+.best-table .good-line img.need-portrait {
+	cursor: inherit;
 }
 
-.best-table .grade + img.need-portrait {
-	margin-left: 10px;
+/* In the table the portraits follow the product's name, wrapping with it. Below 520px the
+   cards put them under the product instead: keep this width paired with the cards'
+   max-width: 519px block ("Buildings and Best Buildings cards") */
+@media only screen and (min-width: 520px) {
+	.best-table .need-portraits {
+		display: contents;
+	}
+
+	.best-table .good-line img.need-portrait {
+		margin-left: 5px;
+	}
+
+	.best-table .grade + .need-portraits > img.need-portrait:first-child {
+		margin-left: 10px;
+	}
 }
 
 /* No selected species needs this product */
@@ -1306,11 +1319,23 @@ div.overlap-grid.ats-container {
 	.overlap-grid .overlap-label {
 		padding-right: 6px;
 	}
+
+	/* The icon frame normally sits 7px outside the image, more room than these small cells
+	   leave, so frames drew over the next row and column. Here it is 2px, inside the gap. */
+	.overlap-grid .icon-row .ats-single-ingredient-icon img {
+		border-image-width: 2px;
+		border-image-outset: 2px;
+	}
 }
 
 @media only screen and (max-width: 359px) {    /* narrow phone: fits a 320px screen */
 	.overlap-grid .icon {
 		padding: 1px;
+	}
+
+	/* "Species Needs Overlap" stays on one line in the header bar */
+	.overlap-grid .grid-header {
+		letter-spacing: 0.05em;
 	}
 }
 
@@ -1329,6 +1354,15 @@ div.overlap-grid.ats-container {
     padding-right: 15px;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+/* A dimmed need dims its icon only, so the divider beside it stays one unbroken line */
+.overlap-grid .overlap-label.icon-inactive {
+    opacity: 1;
+}
+
+.overlap-grid .overlap-label.icon-inactive img {
+    opacity: 0.2;
 }
 
 .icon {
@@ -2228,10 +2262,8 @@ button.state-reset:hover {
  *   below 680px              cost names drop: amount and icon
  *   below 620px              product names drop: icon and stars (and, in Best Buildings, who
  *                            needs it)
- *   narrower                 the long building names ("Leatherworker") no longer fit beside
- *                            the products: about 520px for Buildings, 560px for Best Buildings.
- *                            Buildings turns into cards (below); Best Buildings scrolls sideways
- *                            inside its frame for now, until its cards are designed.
+ *   below 520px              the long building names ("Leatherworker") no longer fit beside
+ *                            the products, and both tables turn into cards (below)
  * Below 768px the side margins are a fixed 8px, so the window width tells the frame width
  * (less a desktop scrollbar, which the widths above allow for).
  */
@@ -2275,8 +2307,33 @@ button.state-reset:hover {
 		display: none;
 	}
 
+	/* On its own line now: as compact as the Buildings table's Products / Costs filter buttons,
+	   so it doesn't outsize the text around it */
 	button.ruins-toggle {
 		margin-left: 0;
+		font-size: 11pt;
+		padding: 1px 10px;
+	}
+}
+
+/* Best Buildings' species keep to one line: first the "Species:" label drops (the portraits are
+   the Species Needs grid's), then below about 390px the portraits shrink from 46px to 36px */
+@media only screen and (max-width: 454px) {
+	/* Hidden from view only: screen readers still announce "Species:" before the portraits */
+	.affinity-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+}
+
+@media only screen and (max-width: 389px) {
+	.affinity-picker .affinity-portrait {
+		width: 32px;
+		height: 32px;
 	}
 }
 
@@ -2287,53 +2344,55 @@ button.state-reset:hover {
 }
 
 @media only screen and (max-width: 599px) {
-	.buildings-panel .icon-grid-wrapper,
-	.best-buildings .icon-grid-wrapper {
+	.buildings-panel .icon-grid-wrapper {
 		overflow-x: auto;
 	}
 }
 
-/* The products' star pills only show on the Buildings cards below */
+/* The products' star pills only show on the cards below */
 .grade-badge {
 	display: none;
 }
 
 /*
- * Buildings cards, below 520px (where the table no longer fits even with every name dropped).
- * Each row becomes a card: the building's icon and name across the top, then its products, a
- * divider, and its costs pushed to the right edge. The goods are 38 x 40px tap targets: each
- * product's rating sits in a pill centered on its top edge (three slots, hollow for the missing
- * stars), each cost's amount in its top-right corner. 7 goods (the most any building has) fit a
- * 320px screen. The header stays a row, its Costs filter over the costs.
+ * Buildings and Best Buildings cards, below 520px (where the Buildings table no longer fits even
+ * with every name dropped; Best Buildings would still fit by wrapping its long names, but turns
+ * at the same width so both tabs look alike). Each row becomes a card: the building's icon and
+ * name across the top, then its products, a divider, and its costs pushed to the right edge.
+ * The goods are 38 x 40px tap targets: each product's rating sits in a pill centered on its top
+ * edge (three slots, hollow for the missing stars), each cost's amount in its top-right corner.
+ * 7 goods (the most any building has) fit a 320px screen. The header stays a row, its Costs
+ * filter over the costs. Best Buildings adds its score on the icon's corner, the worker bonuses
+ * under the name, and who needs each product as small portraits under it, two to a row.
  */
 @media only screen and (max-width: 519px) {
-	.buildings-panel table.buildings-table,
-	.buildings-panel .buildings-table thead,
-	.buildings-panel .buildings-table tbody {
+	table.buildings-table,
+	.buildings-table thead,
+	.buildings-table tbody {
 		display: block;
 	}
 
-	.buildings-panel table.buildings-table {
+	table.buildings-table {
 		padding: 0;
 	}
 
-	.buildings-panel .buildings-table thead tr {
+	.buildings-table thead tr {
 		display: flex;
 		align-items: center;
 		border-bottom: 2px solid var(--ats-color-brown-divider);
 	}
 
-	.buildings-panel .buildings-table th:nth-child(n) {
+	.buildings-table th:nth-child(n) {
 		width: auto;
 		padding: 2px 4px 4px;
 		border-bottom: none;
 	}
 
-	.buildings-panel .buildings-table th:nth-child(3) {
+	.buildings-table th:nth-child(3) {
 		margin-left: auto;
 	}
 
-	.buildings-panel .buildings-table tbody tr {
+	.buildings-table tbody tr {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
 		grid-template-areas:
@@ -2345,7 +2404,7 @@ button.state-reset:hover {
 		background-color: rgba(0, 0, 0, 0.2);
 	}
 
-	.buildings-panel .buildings-table tbody td:nth-child(n) {
+	.buildings-table tbody td:nth-child(n) {
 		display: flex;
 		align-items: center;
 		padding: 0;
@@ -2353,30 +2412,30 @@ button.state-reset:hover {
 		background: none;
 	}
 
-	.buildings-panel .buildings-table tbody td:nth-child(1) { grid-area: building; padding-left: 3px; }
-	.buildings-panel .buildings-table tbody td:nth-child(2) { grid-area: products; padding: 10px 4px 0 0; }
-	.buildings-panel .buildings-table tbody td:nth-child(3) { grid-area: cost; padding-top: 10px; }
+	.buildings-table tbody td:nth-child(1) { grid-area: building; padding-left: 3px; }
+	.buildings-table tbody td:nth-child(2) { grid-area: products; padding: 10px 4px 0 0; }
+	.buildings-table tbody td:nth-child(3) { grid-area: cost; padding-top: 10px; }
 
 	/* The divider between products and costs */
-	.buildings-panel .buildings-table tbody td:nth-child(3)::before {
+	.buildings-table tbody td:nth-child(3)::before {
 		content: "";
 		height: 30px;
 		margin-right: 4px;
 		border-left: 2px ridge var(--ats-brown);
 	}
 
-	.buildings-panel .buildings-table img.building-icon {
+	.buildings-table img.building-icon {
 		width: 30px;
 		height: 30px;
 		margin: 0 8px 0 0;
 	}
 
 	/* Slightly tighter, so the longest name (Advanced Rain Collector) stays on one line at 320px */
-	.buildings-panel .buildings-table .building-name {
+	.buildings-table .building-name {
 		letter-spacing: 0.06em;
 	}
 
-	.buildings-panel .buildings-table td .good-line {
+	.buildings-table td .good-line {
 		position: relative;
 		display: flex;
 		align-items: center;
@@ -2387,15 +2446,15 @@ button.state-reset:hover {
 		margin: 0;
 	}
 
-	.buildings-panel .buildings-table td .good-line > img,
-	.buildings-panel .buildings-table td:nth-child(2) .good-line > img:first-child {
+	.buildings-table td .good-line > img,
+	.buildings-table td:nth-child(2) .good-line > img:first-child {
 		width: 26px;
 		height: 26px;
 		margin: 0;
 	}
 
 	/* The written stars stay for screen readers; the pill shows them */
-	.buildings-panel .buildings-table .good-line .grade {
+	.buildings-table .good-line .grade {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -2403,7 +2462,7 @@ button.state-reset:hover {
 		clip-path: inset(50%);
 	}
 
-	.buildings-panel .buildings-table .grade-badge {
+	.buildings-table .grade-badge {
 		position: absolute;
 		top: -5px;
 		left: 50%;
@@ -2424,7 +2483,7 @@ button.state-reset:hover {
 		opacity: 0.75;
 	}
 
-	.buildings-panel .buildings-table .good-amount {
+	.buildings-table .good-amount {
 		position: absolute;
 		top: -3px;
 		right: -3px;
@@ -2444,8 +2503,8 @@ button.state-reset:hover {
 		pointer-events: none;
 	}
 
-	.buildings-panel .buildings-table tbody tr.category-row,
-	.buildings-panel .buildings-table tbody tr.empty-row {
+	.buildings-table tbody tr.category-row,
+	.buildings-table tbody tr.empty-row {
 		display: block;
 		margin: 0;
 		padding: 0;
@@ -2453,17 +2512,127 @@ button.state-reset:hover {
 		background: none;
 	}
 
-	.buildings-panel .buildings-table tbody tr.category-row td,
-	.buildings-panel .buildings-table tbody tr.empty-row td {
+	.buildings-table tbody tr.category-row td,
+	.buildings-table tbody tr.empty-row td {
 		display: block;
 	}
 
-	.buildings-panel .buildings-table tbody tr.category-row td {
+	.buildings-table tbody tr.category-row td {
 		padding: 10px 2px 0;
 	}
 
-	.buildings-panel .buildings-table tbody tr.empty-row td {
+	.buildings-table tbody tr.empty-row td {
 		padding: 14px 10px;
 		border: 2px ridge var(--ats-brown);
+	}
+
+	/* Best Buildings' column titles are plain labels (unlike the Buildings filters), and a card
+	   shows what each part is, so they drop */
+	.best-table thead {
+		display: none;
+	}
+
+	/* The table-only portrait rules above are scoped to min-width: 520px to match this block */
+
+	/* Best Buildings: products and costs line up along their tops, since portraits hang under
+	   some products */
+	.best-table tbody td:nth-child(2),
+	.best-table tbody td:nth-child(3) {
+		align-items: flex-start;
+	}
+
+	.best-table tbody td:nth-child(3)::before {
+		margin-top: 5px;
+	}
+
+	.best-table .building-cell {
+		align-items: center;
+	}
+
+	.best-table .building-text {
+		gap: 3px;
+		min-width: 0;
+	}
+
+	.best-table .icon-with-score {
+		margin: 0 16px 0 0;
+	}
+
+	.best-table .icon-with-score img.building-icon {
+		margin: 0;
+	}
+
+	/* A smaller medallion, with an invisible margin so it is still about 40px to tap */
+	.best-table .chip-badge.best-score {
+		right: -10px;
+		bottom: -7px;
+		min-width: 20px;
+		height: 20px;
+		padding: 0 3px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: var(--ats-yellow);
+		border-radius: 10px;
+		font-size: 9pt;
+	}
+
+	.best-table .chip-badge.best-score::before {
+		content: "";
+		position: absolute;
+		top: -10px;
+		right: -10px;
+		bottom: -10px;
+		left: -10px;
+	}
+
+	/* The score breakdown fits the phone: its rows wrap instead of running off the right edge */
+	.best-table .chip-badge.best-score .chip-badge-tip {
+		max-width: min(260px, calc(100vw - 80px));
+	}
+
+	.best-table .chip-badge.best-score .tip-row {
+		flex-wrap: wrap;
+		white-space: normal;
+	}
+
+	.best-table .bonus-row {
+		gap: 10px;
+		padding-top: 2px;
+	}
+
+	.best-table td .worker-bonus > img {
+		width: 16px;
+		height: 16px;
+		border-width: 3px;
+	}
+
+	.best-table td .good-line {
+		flex-direction: column;
+		justify-content: flex-start;
+		height: auto;
+		min-height: 40px;
+	}
+
+	/* 26px plus its 4px frame, centered in the 40px cell */
+	.best-table td .good-line > img,
+	.best-table td:nth-child(2) .good-line > img:first-child {
+		margin: 3px 0;
+	}
+
+	.best-table .need-portraits {
+		display: grid;
+		grid-template-columns: repeat(2, 15px);
+		gap: 2px;
+		justify-content: center;
+	}
+
+	.best-table td .need-portraits > img.need-portrait {
+		width: 15px;
+		height: 15px;
+		margin: 0;
+		border: none;
+		border-image: none;
+		border-radius: 3px;
+		box-shadow: 0 0 0 1px rgba(226, 205, 157, 0.55);
 	}
 }

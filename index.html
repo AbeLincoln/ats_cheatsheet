@@ -677,8 +677,11 @@
 					}
 				};
 				
+                // Services (Religion, Brawling...) select the good that meets them; goods with no
+                // Ingredient Grid icon do nothing
                 const handleIconClick = (iconName) => {
-                    document.getElementById(iconName).click();
+                    const icon = document.getElementById(NEEDTRANS[iconName] || iconName);
+                    if (icon) icon.click();
                 };
 
 				const sortedData = [...data].sort((a, b) => {
@@ -1887,8 +1890,11 @@
 					if (gridIcon) gridIcon.click();
 				};
 
+				// As in the Buildings table: services select the good that meets them, and goods with
+				// no Ingredient Grid icon do nothing
 				const handleIconClick = (iconName) => {
-					document.getElementById(iconName).click();
+					const icon = document.getElementById(NEEDTRANS[iconName] || iconName);
+					if (icon) icon.click();
 				};
 
 				const ranked = FORMATTED_BUILDINGS
@@ -1929,7 +1935,7 @@
 										<tr>
 											<th>Building</th>
 											<th>Products</th>
-											<th>Building Cost</th>
+											<th><span className="cost-header-building">Building </span>Cost</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -1966,17 +1972,17 @@
 													{item.products.map((productItem, productIndex) => {
 														const likedBy = productLikedBy(productItem.name, species);
 														return (
-														  <div key={productIndex} className={`good-line${likedBy.length ? '' : ' unwanted'}`}><img onClick={() => handleIconClick(productItem.name)} alt={productItem.name} src={productItem.icon_path} width="30" height="30"/><span className="good-name"> {productItem.name}</span>{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}
-															{likedBy.map(s => (
+														  <div key={productIndex} className={`good-line${likedBy.length ? '' : ' unwanted'}`} onClick={() => handleIconClick(productItem.name)}><img alt={productItem.name} src={productItem.icon_path} width="30" height="30"/>{productItem.grade && <GradeBadge grade={productItem.grade} />}<span className="good-name"> {productItem.name}</span>{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}
+															{likedBy.length > 0 && <span className="need-portraits">{likedBy.map(s => (
 																<img key={s} src={SPECIES_ICONS[s]} alt={s} title={`${speciesPlural(s)} need this`} className="need-portrait"/>
-															))}
+															))}</span>}
 														  </div>
 														);
 													})}
 												</td>
 												<td>
 													{item.cost.map((costItem, costIndex) => (
-													  <div key={costIndex} className="good-line"><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} onClick={() => handleIconClick(costItem.name)} src={costItem.icon_path} width="30" height="30"/><span className="good-name"> {costItem.name}</span></div>
+													  <div key={costIndex} className="good-line" onClick={() => handleIconClick(costItem.name)}><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} src={costItem.icon_path} width="30" height="30"/><span className="good-name"> {costItem.name}</span></div>
 													))}
 												</td>
 											</tr>
