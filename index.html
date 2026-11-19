@@ -50,6 +50,25 @@
 				}, [eventName]);
 			};
 
+			// Whether the page frame (div.content, the "page" container the stylesheet's container
+			// queries measure) is narrower than `width`, for parts only one layout draws. `ref` is any
+			// element inside the frame. Without ResizeObserver it answers true, so nothing goes missing
+			// (the stylesheet still hides what doesn't apply).
+			const usePageNarrowerThan = (ref, width) => {
+				const [narrower, setNarrower] = useState(false);
+				useEffect(() => {
+					const page = ref.current && ref.current.closest('div.content');
+					if (!page || typeof ResizeObserver === 'undefined') {
+						setNarrower(true);
+						return undefined;
+					}
+					const observer = new ResizeObserver(entries => setNarrower(entries[0].contentRect.width < width));
+					observer.observe(page);
+					return () => observer.disconnect();
+				}, [width]);
+				return narrower;
+			};
+
 			const loadSavedState = () => {
 				try {
 					return JSON.parse(localStorage.getItem(SAVED_STATE_KEY)) || {};
@@ -1529,6 +1548,86 @@
 				);
 			};
 
+			// Phone cards (below a 460px frame): one entry per recipe slot, in the slot's colour and the
+			// recipe's order, in place of the ingredient chips and the Look out for lines.
+			//   one icon with a check      ready: the good the slot uses, everything down its chain ticked
+			//   one icon with a hammer     the good the slot uses; the hammer counts the blueprints its chain
+			//                              needs and its tooltip names them (a folded chip does the same)
+			//   several icons              missing ingredients: get any one of them
+			// Service buildings come first, in the neutral tint. Flour (Biscuits, Pie) is the only slot
+			// with a single option; when it can't be made it carries a ring, followed by its own missing
+			// slots in the paler tint.
+			const SlotEntries = ({ need, currentRawResources, hasRecipeBuilding, hasServiceBuilding, handleIconClick }) => {
+				const goodName = NEEDTRANS[need] || need;
+				const good = GOODS[goodName];
+				if (!good || !good.ingredient_sets) return null;
+				const rawSet = new Set(currentRawResources);
+				const visited = new Set([goodName]);
+				const optionIcons = (group) => group.filter(ing => GOODS[ing]).map(ing => (
+					<LookOutIcon key={ing} good={ing} onClick={() => handleIconClick(ing)}
+						hammer={!isRawResource(ing) && !hasRecipeBuilding.includes(ing)}
+						needs={getMissingSlots(ing, currentRawResources)} />
+				));
+				const entries = [];
+				if (isServiceBuildingMissing(need, hasServiceBuilding)) {
+					entries.push(
+						<span key="service" className="look-out-for-group look-out-for-service">
+							{(NEED_TO_SERVICE_BUILDINGS[need] || []).filter(bid => BUILDINGS[bid]).map(bid => (
+								<img key={bid} className="service-building-icon" src={BUILDINGS[bid].icon}
+									alt={BUILDINGS[bid].displayName} title={BUILDINGS[bid].displayName} width="24" height="24" />
+							))}
+						</span>
+					);
+				}
+				good.ingredient_sets.forEach((group, i) => {
+					const color = INGREDIENT_GROUP_COLORS_ALPHA[i] || INGREDIENT_GROUP_COLORS_ALPHA[0];
+					const satisfier = pickSlotIngredient(group, rawSet, hasRecipeBuilding, visited);
+					if (satisfier) {
+						const chain = isRawResource(satisfier) ? [] : getBlueprintGoods(satisfier, rawSet, hasRecipeBuilding, visited);
+						const status = chain.length === 0 ? 'done' : 'blueprint';
+						entries.push(
+							<span key={i} className="look-out-for-group" style={{ backgroundColor: color }}>
+								<span className="look-out-icon slot-used">
+									<img src={GOODS[satisfier].icon_path} alt={GOODS[satisfier].displayName} title={GOODS[satisfier].displayName}
+										width="24" height="24" onClick={() => handleIconClick(satisfier)} />
+									<StatusBadge status={status}
+										goods={status === 'done' ? group.filter(ing => isFullySatisfied(ing, rawSet, hasRecipeBuilding, visited)) : chain} />
+								</span>
+							</span>
+						);
+						return;
+					}
+					const only = group.length === 1 ? group[0] : null;
+					if (only && !isRawResource(only) && GOODS[only] && GOODS[only].ingredient_sets) {
+						const nested = INGREDIENT_GROUP_COLORS_NESTED[i] || INGREDIENT_GROUP_COLORS_NESTED[0];
+						const missing = getMissingSlots(only, currentRawResources);
+						entries.push(
+							<span key={i} className="look-out-for-group" style={{ backgroundColor: color }}>
+								<LookOutIcon good={only} onClick={() => handleIconClick(only)}
+									hammer={!hasRecipeBuilding.includes(only)} needs={missing} />
+								{missing.map((sub, k) => (
+									<span key={k} className="look-out-for-group slot-nested" style={{ backgroundColor: nested }}>{optionIcons(sub)}</span>
+								))}
+							</span>
+						);
+						return;
+					}
+					entries.push(
+						<span key={i} className="look-out-for-group" style={{ backgroundColor: color }}>{optionIcons(group)}</span>
+					);
+				});
+				return <div className="slot-entries">{entries}</div>;
+			};
+
+			// A group heading inside a side list. On phones (below a 460px frame) the lists sit above
+			// the table as four equal sections, and each heading also says how many are ticked.
+			const SuggestorSectionHeading = ({ title, items, ticked, className = '' }) => (
+				<div className={`suggestor-subheading ${className}`}>
+					{title}
+					<span className="suggestor-section-count">{items.filter(item => ticked.includes(item)).length} of {items.length} ticked</span>
+				</div>
+			);
+
 			const SuggestorContent = () => {
 				const savedSuggestorState = loadSavedState();
 				const speciesNames = Object.keys(SPECIES);
@@ -1586,24 +1685,26 @@
 					return needSpecies.length > 0 && needSpecies.every(s => !activeSpecies.includes(s));
 				};
 
+				// The phone cards' slot entries are only built while the cards show (below a 460px frame,
+				// step 5 in the stylesheet)
+				const suggestorRef = useRef(null);
+				const showCards = usePageNarrowerThan(suggestorRef, 460);
+
 				return (
-					<div>
+					<div ref={suggestorRef}>
 						<div className="ats-container icon-grid" style={{ maxWidth: '1200px', marginBottom: '15px' }}>
 							<div className="grid-header ats-infobox-header-title">
-								Species
+								Suggestor
 								<SacredGroveWarning count={activeSpecies ? activeSpecies.length : 0} />
 							</div>
 							<div className="icon-grid-wrapper">
-								<div className="icon-row header-row">
+								{/* The same species picker as Best Buildings */}
+								<div className="affinity-picker">
+									<span className="affinity-label" title="Needs wanted by the selected species come first. Follows the selection in the Species Needs grid above.">Species:</span>
 									{speciesNames.map(species => (
-										<div
-											key={species}
-											className={`ats-single-ingredient-icon icon${isSpeciesLit(species) ? '' : ' icon-inactive'}`}
-											onClick={() => handleSpeciesClick(species)}
-											style={{ cursor: 'pointer' }}
-										>
-											<img src={SPECIES_ICONS[species]} alt={species} title={species} />
-										</div>
+										<img key={species} src={SPECIES_ICONS[species]} alt={species} title={species}
+											className={`affinity-portrait${activeSpecies && activeSpecies.includes(species) ? ' affinity-active' : ''}`}
+											onClick={() => handleSpeciesClick(species)} />
 									))}
 								</div>
 							</div>
@@ -1611,9 +1712,16 @@
 						{/* Three areas (CSS grid): side by side on wide screens; narrower, the two lists sit above the table */}
 						<div className="ats-container suggestor-main">
 							<div className="suggestor-side suggestor-raw">
-								<div className="grid-header ats-infobox-header-title">Raw resources</div>
+								{/* Narrower than a 1010px frame the list narrows and the heading shortens to one word */}
+								<div className="grid-header ats-infobox-header-title">
+									<span className="suggestor-side-long">Raw resources</span>
+									<span className="suggestor-side-short">Resources</span>
+								</div>
 								<div className="icon-grid-wrapper">
 									<div className="suggestor-list">
+										{/* Phones only, where the list's own heading above is hidden */}
+										<SuggestorSectionHeading title="Raw resources" items={RAW_RESOURCES} ticked={currentRawResources}
+											className="suggestor-subheading-raw" />
 										{RAW_RESOURCES.map(resource => (
 											<label key={resource} className="suggestor-raw-resource">
 												<input
@@ -1681,7 +1789,7 @@
 															<div key={idx} className="look-out-for-item">
 																{s.type === 'service_building' ? (
 																	<span className="look-out-for-group look-out-for-service">
-																		<span>One of </span>
+																		<span className="look-out-label">One of </span>
 																		{(NEED_TO_SERVICE_BUILDINGS[s.need] || []).filter(bid => BUILDINGS[bid]).map(bid => (
 																			<img
 																				key={bid}
@@ -1699,7 +1807,7 @@
 																		className="look-out-for-group look-out-for-blueprint"
 																		style={s.colorAlpha ? { backgroundColor: s.colorAlpha } : undefined}
 																	>
-																		<span>Recipes for </span>
+																		<span className="look-out-label">Recipes for </span>
 																		{s.goods.filter(g => GOODS[g]).map(g => (
 																			<LookOutIcon key={g} good={g} hammer onClick={() => handleIconClick(g)} />
 																		))}
@@ -1710,7 +1818,7 @@
 																		className="look-out-for-group"
 																		style={{ backgroundColor: s.colorAlpha }}
 																	>
-																		<span>One of </span>
+																		<span className="look-out-label">One of </span>
 																		{s.options.filter(ing => GOODS[ing]).map(ing => (
 																			<LookOutIcon key={ing} good={ing} onClick={() => handleIconClick(ing)}
 																				hammer={!isRawResource(ing) && !hasRecipeBuilding.includes(ing)}
@@ -1720,6 +1828,9 @@
 																)}
 															</div>
 														))}
+														{/* Phone cards show these instead of the ingredient chips and the lines above */}
+														{showCards && <SlotEntries need={need} currentRawResources={currentRawResources} hasRecipeBuilding={hasRecipeBuilding}
+															hasServiceBuilding={hasServiceBuilding} handleIconClick={handleIconClick} />}
 													</td>
 												</tr>
 											))}
@@ -1728,10 +1839,13 @@
 								</div>
 							</div>
 							<div className="suggestor-side suggestor-have">
-								<div className="grid-header ats-infobox-header-title">Have Blueprints</div>
+								<div className="grid-header ats-infobox-header-title">
+									<span className="suggestor-side-long">Have Blueprints</span>
+									<span className="suggestor-side-short">Blueprints</span>
+								</div>
 								<div className="icon-grid-wrapper">
 									<div className="suggestor-list">
-										<div className="suggestor-subheading">Transitional</div>
+										<SuggestorSectionHeading title="Transitional" items={TRANSITIONAL_FOR_NEEDED} ticked={hasRecipeBuilding} />
 										{TRANSITIONAL_FOR_NEEDED.map(good => (
 											<label key={good} className="suggestor-raw-resource">
 												<input
@@ -1751,7 +1865,7 @@
 												<span>{GOODS[good] ? GOODS[good].displayName : good}</span>
 											</label>
 										))}
-										<div className="suggestor-subheading">Needed goods</div>
+										<SuggestorSectionHeading title="Needed goods" items={NEEDED_GOODS} ticked={hasRecipeBuilding} />
 										{NEEDED_GOODS.map(good => (
 											<label key={good} className="suggestor-raw-resource">
 												<input
@@ -1771,7 +1885,7 @@
 												<span>{GOODS[good] ? GOODS[good].displayName : good}</span>
 											</label>
 										))}
-										<div className="suggestor-subheading">Service Buildings</div>
+										<SuggestorSectionHeading title="Service Buildings" items={SERVICE_BUILDINGS} ticked={hasServiceBuilding} />
 										{SERVICE_BUILDINGS.map(bid => (
 											<label key={bid} className="suggestor-raw-resource">
 												<input

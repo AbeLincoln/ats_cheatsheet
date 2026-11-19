@@ -1858,7 +1858,8 @@ table.data-table tr.suggestor-row-dimmed td img {
 
 /* Goods icons in the Suggestor get the same gold frame as icons elsewhere */
 .ingredient-group-box img,
-.suggestor-table .look-out-for-item img {
+.suggestor-table .look-out-for-item img,
+.suggestor-table .slot-entries img {
 	width: 22px;
 	height: 22px;
 	border: 3px solid transparent;
@@ -1882,7 +1883,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 	border-radius: 3px;
 }
 
-.look-out-for-group > span:first-child {
+.look-out-label {
 	white-space: nowrap;
 	margin-right: 2px;
 }
@@ -1953,7 +1954,8 @@ table.data-table tr.suggestor-row-dimmed td img {
 	cursor: default;
 }
 
-.suggestor-table .look-out-for-item img.service-building-icon {
+.suggestor-table .look-out-for-item img.service-building-icon,
+.suggestor-table .slot-entries img.service-building-icon {
 	cursor: default;
 }
 
@@ -1974,7 +1976,9 @@ table.data-table tr.suggestor-row-dimmed td img {
  *   step 3  (below 830px)         the "One of" / "Recipes for" labels drop (the tinted chip
  *                                 groups the options; the hammer badge marks blueprints)
  *   step 4  (below 650px)         the lists narrow to one icon a row and their headings drop
- * The lists never move: the three columns stay side by side at every width.
+ *   step 5  (below 460px)         phones: the lists move above the table as four always-open
+ *                                 sections, and the rows become cards
+ * Down to step 5 the lists stay put, side by side with the table.
  */
 .suggestor-main.ats-container {
 	display: grid;
@@ -2004,6 +2008,22 @@ table.data-table tr.suggestor-row-dimmed td img {
 	display: flex;
 	flex-direction: column;
 	padding: 8px 0;
+}
+
+/* The lists' headings: "Raw resources" / "Have Blueprints", or one word in step 2's narrower
+   lists, so they stay on one line in the heading band */
+.suggestor-side-short {
+	display: none;
+}
+
+@container page (max-width: 1009px) {
+	.suggestor-side-long {
+		display: none;
+	}
+
+	.suggestor-side-short {
+		display: inline;
+	}
 }
 
 @container page (max-width: 1199px) {
@@ -2037,6 +2057,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 		width: 44px;
 		height: 44px;
 		gap: 0;
+		padding: 0;
 	}
 
 	.suggestor-raw-resource > span {
@@ -2053,8 +2074,9 @@ table.data-table tr.suggestor-row-dimmed td img {
 	}
 }
 
-/* Where :has() works (not Firefox before 121), the icon dims until ticked and a check mark
-   replaces the checkbox, which stays in place for keyboards and screen readers, just not drawn */
+/* Where :has() works (not Firefox before 121), the icon dims until ticked and a ticked one gets
+   a gold edge in place of the checkbox, which stays in place for keyboards and screen readers,
+   just not drawn */
 @container page (max-width: 1009px) {
 	@supports selector(:has(*)) {
 		.suggestor-raw-resource input[type="checkbox"] {
@@ -2068,21 +2090,11 @@ table.data-table tr.suggestor-row-dimmed td img {
 			opacity: 0.45;
 		}
 
-		.suggestor-raw-resource:has(input:checked)::after {
-			content: "\2713";
-			position: absolute;
-			top: -3px;
-			right: -3px;
-			width: 15px;
-			height: 15px;
-			border-radius: 50%;
-			background: var(--ats-dark-brown);
-			border: 1px solid var(--ats-yellow);
-			color: var(--ats-yellow);
-			font-size: 10px;
-			line-height: 15px;
-			text-align: center;
-			letter-spacing: 0;
+		/* A gold edge, not a check: on the cards a check means "ready" */
+		.suggestor-raw-resource:has(input:checked) img {
+			outline: 2px solid var(--ats-yellow);
+			outline-offset: 2px;
+			border-radius: 2px;
 		}
 
 		.suggestor-raw-resource:has(input:focus-visible) {
@@ -2107,14 +2119,14 @@ table.data-table tr.suggestor-row-dimmed td img {
 		width: auto;
 	}
 
-	/* "Blueprints" has to fit the narrow list; the heading wraps between its words */
+	/* "Resources" and "Blueprints" fit the 96px lists on one line */
 	.suggestor-side > .grid-header {
 		font-size: 11pt;
 	}
 }
 
 @container page (max-width: 829px) {
-	.suggestor-table .look-out-for-group > span:first-child {
+	.suggestor-table .look-out-label {
 		display: none;
 	}
 }
@@ -2126,11 +2138,37 @@ table.data-table tr.suggestor-row-dimmed td img {
 	.suggestor-main.ats-container {
 		grid-template-columns: 44px minmax(0, 1fr) 44px;
 		column-gap: 8px;
-		padding: 0 6px 12px;
+		padding: 0 10px 12px;
 	}
 
 	.suggestor-side > .grid-header {
 		display: none;
+	}
+
+	/* Both lists start level with the table's column titles: the "Suggested Need" heading takes a
+	   row of its own across the panel, and the lists start in the row below, as the table does */
+	.suggestor-main.ats-container {
+		grid-template-areas: ". head ." "raw need have";
+	}
+
+	.suggestor-suggested-need {
+		display: contents;
+	}
+
+	.suggestor-suggested-need > .grid-header {
+		grid-area: head;
+	}
+
+	.suggestor-suggested-need > .icon-grid-wrapper {
+		grid-area: need;
+		min-width: 0;
+	}
+
+	/* ...then step down past the table's own top spacing (its 4px margin, the data table's 10px
+	   padding and the 8px row spacing) to the column titles */
+	.suggestor-list {
+		grid-template-columns: 44px;
+		padding-top: calc(4px + 10px + 8px);
 	}
 
 	.suggestor-list .suggestor-subheading {
@@ -2139,13 +2177,208 @@ table.data-table tr.suggestor-row-dimmed td img {
 		padding: 0;
 		overflow: hidden;
 	}
+
+	/* No divider above the first group, so the two lists line up */
+	.suggestor-list .suggestor-subheading:first-child {
+		display: none;
+	}
 }
 
-/* Narrower than the table's own minimum, it scrolls sideways inside the panel (placeholder
-   until the micro layout is designed) */
+/* Phone-only parts, hidden until step 5: the Raw resources section heading, the ticked counts
+   and the per-slot card entries */
+.suggestor-subheading-raw,
+.suggestor-section-count,
+.slot-entries {
+	display: none;
+}
+
+/* Step 5 (below 460px, where the table no longer fits beside the lists): the lists move above
+   the table as four equal sections (Raw resources, Transitional, Needed goods, Service
+   Buildings), always open, each under a one-line heading with how many are ticked. Each icon
+   fills its square, seven or more a row. The rows become cards: the need's icon and name with
+   who needs it at the right, then one entry per recipe slot (SlotEntries in index.html) in place
+   of the ingredient chips and the Look out for lines. */
 @container page (max-width: 459px) {
-	.suggestor-suggested-need > .icon-grid-wrapper {
-		overflow-x: auto;
+	.suggestor-main.ats-container {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas: "raw" "have" "need";
+		row-gap: 0;
+	}
+
+	/* The heading goes back inside the table's area, below the lists */
+	.suggestor-suggested-need {
+		display: block;
+	}
+
+	.suggestor-side > .icon-grid-wrapper {
+		padding: 0;
+	}
+
+	.suggestor-list {
+		grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+		gap: 3px;
+		justify-items: stretch;
+		padding: 0 0 4px;
+	}
+
+	/* Section headings: the dividers of step 4 get their names back, plus the count */
+	.suggestor-list .suggestor-subheading,
+	.suggestor-list .suggestor-subheading:first-child {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		height: auto;
+		overflow: visible;
+		margin: 0 0 3px;
+		padding: 6px 2px 3px;
+		font-size: 10.5pt;
+		line-height: 1.2;
+	}
+
+	.suggestor-section-count {
+		display: inline;
+		margin-left: auto;
+		color: var(--ats-color-white);
+		font-family: var(--ats-font-body), sans-serif;
+		font-variant: normal;
+		font-size: 9pt;
+		letter-spacing: 0;
+		opacity: 0.75;
+	}
+
+	/* Each item is a square the icon fills */
+	.suggestor-raw-resource {
+		width: auto;
+		height: auto;
+		aspect-ratio: 1;
+		padding: 0;
+	}
+
+	.suggestor-raw-resource img {
+		box-sizing: border-box;
+		width: 100%;
+		height: 100%;
+		border-width: 3px;
+		border-image-outset: 0;
+	}
+
+	/* The ticked gold edge sits on the icon's frame, inside the 3px gap */
+	.suggestor-raw-resource:has(input:checked) img {
+		outline-offset: -1px;
+	}
+
+	/* Cards */
+	table.suggestor-table,
+	.suggestor-table tbody {
+		display: block;
+		margin: 0;
+	}
+
+	.suggestor-table thead {
+		display: none;
+	}
+
+	.suggestor-table tbody tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas: "item species" "look look";
+		align-items: center;
+		margin: 8px 0;
+		padding: 6px 6px 4px;
+		border: 2px ridge var(--ats-brown);
+		background: rgba(0, 0, 0, 0.2);
+	}
+
+	.suggestor-table td,
+	.suggestor-table td:first-child,
+	.suggestor-table td:last-child {
+		display: block;
+		min-width: 0;
+		padding: 0;
+		border: none;
+	}
+
+	.suggestor-table td:first-child {
+		display: contents;
+	}
+
+	.suggestor-table .item-cell {
+		grid-area: item;
+		margin: 0;
+	}
+
+	/* A cell drawn as display: contents can't be faded, so a dimmed card fades its icon and name
+	   here instead (the same as the other cells) */
+	table.data-table tr.suggestor-row-dimmed .item-cell {
+		opacity: 0.5;
+	}
+
+	.suggestor-table td:nth-child(2) {
+		grid-area: species;
+	}
+
+	.suggestor-table td:nth-child(3) {
+		grid-area: look;
+		margin-top: 8px;
+	}
+
+	.suggestor-table img.item-icon {
+		width: 34px;
+		height: 34px;
+		margin: 2px 10px 2px 2px;
+	}
+
+	.suggestor-table .item-cell > .chip-badge {
+		top: -4px;
+		left: 26px;
+	}
+
+	.suggestor-table .species-strip {
+		gap: 4px;
+		max-width: none;
+	}
+
+	.suggestor-table .species-strip img {
+		width: 22px;
+		height: 22px;
+	}
+
+	.suggestor-table .ingredient-tree-top,
+	.suggestor-table .look-out-for-item {
+		display: none;
+	}
+
+	.suggestor-table .slot-entries {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		line-height: 1;
+	}
+
+	.slot-entries .look-out-for-group {
+		gap: 2px 3px;
+		padding: 3px 4px;
+	}
+
+	.slot-entries .slot-nested {
+		margin-left: 4px;
+		padding: 2px 3px;
+	}
+
+	/* The good a slot uses: its check or hammer is the small pill size of the options' badges */
+	.slot-used > .chip-badge {
+		top: -6px;
+		right: -7px;
+		padding: 0 1px;
+		border-radius: 7px;
+	}
+
+	.slot-used > .chip-badge .fa-check,
+	.slot-used > .chip-badge .fa-hammer {
+		width: 12px;
+		height: 12px;
+		font-size: 7px;
 	}
 }
 
