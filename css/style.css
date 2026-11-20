@@ -132,9 +132,11 @@ body {
     text-align: center;
 }
 
+/* Side margins: 50px on wide screens, shrinking to 8px at 1210px before any layout has to change.
+   Top and bottom stay at 50px. */
 @media only screen and (min-width: 768px) {
     body {
-        margin: 50px;
+        margin: 50px clamp(8px, (100vw - 1210px) * 0.38 + 8px, 50px);
     }
 }
 
@@ -149,27 +151,74 @@ hr {
 	margin: 10px;
 }
 
-.tabs button {
-	color: var(--ats-yellow, gold);
-	font-variant: small-caps;
-    font-family: var(--ats-font-heading),serif;
-    font-size: 14pt;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    line-height: 1.4em;
+/* Lower-half buttons share the game's style; the selected one gets a yellow edge and glow */
+.tabs button,
+button.cat-active,
+button.cat-inactive,
+button.ruins-toggle {
+	color: var(--ats-gold);
 	background-color: #081007;
-	border: 2.5px ridge #93775d;
+	border: 1px solid var(--ats-brown);
+	border-radius: 4px;
+	font-family: var(--ats-font-heading), serif;
+	font-variant: small-caps;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	line-height: 1.3;
+	cursor: pointer;
 }
 
-.tab {
-    padding: 10px 15px;
-    border: none;
-    background-color: #eee;
-    cursor: pointer;
+.tabs button:hover,
+button.cat-active:hover,
+button.cat-inactive:hover,
+button.ruins-toggle:hover {
+	color: var(--ats-bright-gold);
+	border-color: var(--ats-gold);
 }
 
-.tab.active {
-    background-color: #11220f;
+.tabs button.active,
+button.cat-active,
+button.ruins-toggle.ruins-toggle-active {
+	color: var(--ats-yellow);
+	background-color: var(--ats-dark-brown);
+	border-color: var(--ats-yellow);
+	box-shadow: inset 0 0 6px rgba(225, 170, 70, 0.35);
+}
+
+.tabs button:focus-visible,
+button.cat-active:focus-visible,
+button.cat-inactive:focus-visible,
+button.ruins-toggle:focus-visible {
+	outline: 2px solid var(--ats-bright-blue);
+	outline-offset: 2px;
+}
+
+.tabs button {
+	min-height: 40px;    /* a comfortable tap target */
+	font-size: 14pt;
+	padding: 6px 15px;
+	margin: 0 3px;
+}
+
+/* The tabs tighten once they no longer fit on one line, then wrap */
+@container page (max-width: 659px) {
+	.tabs {
+		flex-wrap: wrap;
+		gap: 4px 0;
+		margin: 10px 0;
+	}
+
+	.tabs button {
+		font-size: 11pt;
+		padding: 4px 8px;
+		margin: 0 2px;
+	}
+}
+
+/* The tabs area never grows wider than the page, so the panels inside can fit a phone screen */
+.tabs-panel {
+	min-width: 0;
+	max-width: 100%;
 }
 
 .tab-content {
@@ -177,6 +226,8 @@ hr {
 }
 
 div.content {
+    /* Panels inside lay out by the frame's width (container queries) */
+    container: page / inline-size;
     background: #f8f9fa;
     border: solid #eaecf0;
     border-width: 1px 1px 0.2em;
@@ -268,28 +319,14 @@ img {
 	color:  var(--ats-color-white, #dedede);
 }
 
-button.cat-active {
-    font-variant: small-caps;
-    font-size: 12pt;
-	cursor: pointer;
-	
-	background-color: var(--ats-bright-gold);
-	padding: 2px;
-	border: 0;
-	margin: 2px;
-}
-
+button.cat-active,
 button.cat-inactive {
-    font-variant: small-caps;
-    font-size: 12pt;
-	cursor: pointer;
-	
-	background-color: var(--ats-gold);
-	padding: 2px;
-	border: 0;
-	margin: 2px;
+	font-size: 12pt;
+	padding: 3px 10px;
+	margin: 3px;
 }
 
+/* Data tables (Buildings, Suggestor, Best Buildings): the wiki's recipe-table look */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -298,9 +335,17 @@ button.cat-inactive {
 }
 
 .data-table th, .data-table td {
-    border: 2px solid var(--ats-dark, black);
+    border: 2px ridge var(--ats-brown);
     padding: 8px;
     text-align: left;
+}
+
+.data-table th, .data-table td, .suggestor-raw-resource {
+	font-family: var(--ats-font-condensed), sans-serif;
+	font-size: 10pt;
+	font-weight: 400;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
 }
 
 .data-table td > * > img, .data-table td > img {
@@ -313,43 +358,361 @@ button.cat-inactive {
 	cursor: pointer;
 }
 
-table.data-table > * > tr {
-	background-color: var(--ats-color-green-leather-shadow);
-}
-
-table.data-table > * > tr:nth-child(odd) {
-	background-color: var(--ats-color-green-leather-shadow-lighter);
+table.data-table > tbody > tr {
+	background-color: rgba(0, 0, 0, 0.25);
 }
 
 .data-table th {
-	background-color: var(--ats-color-cyan-very-dark);
-	border: 2px solid var(--ats-dark, black);
+	color: var(--ats-color-tan-headings-text);
+	background-color: transparent;
+	border: none;
+	border-bottom: 2px solid var(--ats-color-brown-divider);
     cursor: pointer; /* Make header clickable for sorting */
 }
 
-table.data-table > * > tr:hover {
-    background-color: var(--ats-gold); /* Highlight row on hover */
+.data-table th:hover {
+	color: var(--ats-bright-gold);
+}
+
+table.data-table > tbody > tr:hover {
+    background-color: rgba(167, 147, 114, 0.16); /* Faint gold tint on hover; keeps the text readable */
 }
 
 /* Category group headers when the table is grouped by category */
 table.data-table > tbody > tr.category-row,
-table.data-table > tbody > tr.category-row:nth-child(odd),
 table.data-table > tbody > tr.category-row:hover {
-    background-color: var(--ats-color-cyan-very-dark);
+    background-color: transparent;
 }
 
 .data-table .category-row td {
     color: var(--ats-yellow, gold);
-    font-size: 120%;
+    font-family: var(--ats-font-heading), serif;
+    font-size: 14pt;
+    font-weight: 500;
     font-variant: small-caps;
-    letter-spacing: 1px;
-    padding: 4px 8px;
+    text-transform: none;
+    letter-spacing: 0.1em;
+    border: none;
+    border-bottom: 1px solid var(--ats-color-brown-divider);
+    padding: 12px 2px 2px;
+}
+
+/* Search box, or the picked ingredient in its place, at one height so the table doesn't jump */
+.filter-chip-row {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 48px;
+}
+
+.ingredient-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 5px;
+	padding: 2px 6px 2px 4px;
+	background: var(--ats-dark);
+	border: 1px solid var(--ats-yellow);
+	border-radius: 5px;
+	box-shadow: inset 0 0 6px rgba(225, 170, 70, 0.35);
+}
+
+.ingredient-chip img {
+	width: 26px;
+	height: 26px;
+	border: 3px solid transparent;
+	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 2px;
+}
+
+.ingredient-chip-name {
+	color: var(--ats-yellow);
+	font-family: var(--ats-font-heading), serif;
+	font-size: 12pt;
+	font-variant: small-caps;
+	letter-spacing: 0.08em;
+}
+
+button.ingredient-chip-clear {
+	background: none;
+	border: none;
+	padding: 0 4px;
+	color: var(--ats-gold);
+	font-size: 12pt;
+	line-height: 1;
+	cursor: pointer;
+}
+
+button.ingredient-chip-clear:hover {
+	color: var(--ats-bright-gold);
+}
+
+button.ingredient-chip-clear:focus-visible {
+	outline: 2px solid var(--ats-bright-blue);
+	outline-offset: 2px;
+}
+
+/* Rows of filter buttons above a table */
+.button-row {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: stretch;
+	margin: 4px 0;
+}
+
+.button-divider {
+	width: 1px;
+	margin: 6px 6px;
+	background-color: var(--ats-color-brown-divider);
+}
+
+/* Buildings table: one carved row per building, with fixed column widths so filtering doesn't
+   shift the columns */
+table.buildings-table {
+	border-collapse: separate;
+	border-spacing: 0 8px;
+	margin-top: 4px;
+	table-layout: fixed;
+}
+
+.buildings-table th:nth-child(1) { width: 36%; }
+.buildings-table th:nth-child(2) { width: 38%; }
+.buildings-table th:nth-child(3) { width: 26%; }
+
+.buildings-table td {
+	border: none;
+	border-top: 2px ridge var(--ats-brown);
+	border-bottom: 2px ridge var(--ats-brown);
+	padding: 6px 10px;
+	vertical-align: middle;
+}
+
+.buildings-table td:first-child {
+	border-left: 2px ridge var(--ats-brown);
+}
+
+.buildings-table td:last-child {
+	border-right: 2px ridge var(--ats-brown);
+}
+
+/* Only the header text and buttons are clickable, not the whole cell */
+.buildings-table th {
+	padding: 2px 10px 4px;
+	cursor: default;
+}
+
+.buildings-table th:hover {
+	color: var(--ats-color-tan-headings-text);
+}
+
+/* Building header: plain text that sorts when clicked */
+.buildings-table button.sort-button {
+	background: none;
+	border: none;
+	padding: 0;
+	color: inherit;
+	font: inherit;
+	letter-spacing: inherit;
+	text-transform: inherit;
+	cursor: pointer;
+}
+
+.buildings-table button.sort-button:hover {
+	color: var(--ats-bright-gold);
+}
+
+.buildings-table button.sort-button:focus-visible {
+	outline: 2px solid var(--ats-bright-blue);
+	outline-offset: 2px;
+}
+
+.buildings-table .sort-indicator {
+	color: var(--ats-yellow);
+}
+
+.buildings-table th[aria-sort="none"] .sort-indicator {
+	color: inherit;
+	opacity: 0.5;
+}
+
+/* Products / Building Cost headers as toggle buttons while searching or filtering by ingredient */
+.buildings-table button.column-filter {
+	font-size: 11pt;
+	padding: 1px 10px;
+	margin: 0;
+}
+
+/* Category headings: gold heading text with a short underline, no box */
+.buildings-table tr.category-row td {
+	border: none;
+	padding: 10px 2px 0;
+}
+
+.buildings-table tr.category-row td span {
+	display: inline-block;
+	border-bottom: 1px solid var(--ats-color-brown-divider);
+	padding-right: 30px;
+}
+
+.buildings-table tr.empty-row td {
+	text-align: center;
+	text-transform: none;
+	font-style: italic;
+	padding: 14px 10px;
+}
+
+/* Icon beside the name; a long name wraps beside the icon, not under it */
+.buildings-table .building-cell {
+	display: flex;
+	align-items: center;
+}
+
+/* Same gold frame as the goods icons (from .data-table td > * > img), but not clickable */
+.buildings-table img.building-icon {
+	flex: none;
+	width: 52px;
+	height: 52px;
+	margin: 4px 14px 4px 2px;
+	vertical-align: middle;
+	cursor: default;
+}
+
+.buildings-table .building-name {
+	color: var(--ats-color-white);
+	font-family: var(--ats-font-heading), serif;
+	font-size: 13pt;
+	font-weight: 500;
+	font-variant: small-caps;
+	text-transform: none;
+	letter-spacing: 0.08em;
+}
+
+/* The whole good (icon, amount, name) selects it in the Ingredient Grid */
+.buildings-table .good-line {
+	width: fit-content;
+	white-space: nowrap;
+	margin: 2px 0;
+	cursor: pointer;
+}
+
+.buildings-table .grade {
+	color: var(--ats-yellow);
+	margin-left: 6px;
+	letter-spacing: 0;
+}
+
+/* Costs: right-align the amounts so the icons line up */
+.buildings-table .good-amount {
+	display: inline-block;
+	min-width: 1.6em;
+	margin-right: 6px;
+	text-align: right;
+}
+
+/* Suggestor table: the Buildings table's rows, with fixed column widths */
+table.suggestor-table {
+	border-collapse: separate;
+	border-spacing: 0 8px;
+	margin-top: 4px;
+	table-layout: fixed;
+}
+
+/* Shares that fit the longest name and open trees, the portraits, and the longest Look out for line */
+.suggestor-table th:nth-child(1) { width: 34%; }
+.suggestor-table th:nth-child(2) { width: 15%; }
+.suggestor-table th:nth-child(3) { width: 51%; }
+
+.suggestor-table th {
+	padding: 2px 8px 4px;
+	cursor: default;
+}
+
+.suggestor-table th:hover {
+	color: var(--ats-color-tan-headings-text);
+}
+
+.suggestor-table td {
+	border: none;
+	border-top: 2px ridge var(--ats-brown);
+	border-bottom: 2px ridge var(--ats-brown);
+	padding: 6px 8px;
+	vertical-align: middle;
+}
+
+.suggestor-table td:first-child {
+	border-left: 2px ridge var(--ats-brown);
+}
+
+.suggestor-table td:last-child {
+	border-right: 2px ridge var(--ats-brown);
+}
+
+/* Needed good: framed icon with the name beside it, the ingredient boxes below */
+.suggestor-table .item-cell {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin-bottom: 4px;
+}
+
+.suggestor-table img.item-icon {
+	flex: none;
+	width: 44px;
+	height: 44px;
+	margin: 4px 12px 4px 2px;
+}
+
+.suggestor-table .item-name {
+	color: var(--ats-color-white);
+	font-family: var(--ats-font-heading), serif;
+	font-size: 13pt;
+	font-weight: 500;
+	font-variant: small-caps;
+	text-transform: none;
+	letter-spacing: 0.08em;
+}
+
+/* Species: portraits two per row, so three or four make a tidy block; names show on hover */
+.suggestor-table .species-strip {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	max-width: 82px; /* two 38px framed portraits and the gap */
+}
+
+.suggestor-table .species-strip img {
+	margin: 0;
+}
+
+.suggestor-table .species-strip img.suggestor-dimmed-portrait {
+	opacity: 0.25;
+}
+
+/* Look out for: sentence case reads better than all caps for these short phrases */
+.suggestor-table .look-out-for-item {
+	text-transform: none;
+	font-size: 10.5pt;
+	letter-spacing: 0.04em;
+}
+
+/* The row good's own status badge sits on the corner of the big item icon */
+.suggestor-table .item-cell > .chip-badge {
+	top: 0;
+	left: 36px;
+	right: auto;
+}
+
+/* Game-coloured checkboxes in the Suggestor's side lists */
+.suggestor-raw-resource input[type="checkbox"] {
+	accent-color: var(--ats-yellow);
+	cursor: pointer;
 }
 
 /* Species affinity picker above the buildings table */
 .affinity-picker {
     display: flex;
     align-items: center;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 4px;
     margin: 8px 0 4px 0;
@@ -360,28 +723,10 @@ table.data-table > tbody > tr.category-row:hover {
     margin-right: 6px;
 }
 
-button.flawless-toggle {
-	background: transparent;
-	border: 1px solid var(--ats-brown);
-	border-radius: 3px;
-	color: var(--ats-gold);
-	cursor: pointer;
-	font-family: var(--ats-font-body), sans-serif;
-	font-size: 10pt;
+button.ruins-toggle {
+	font-size: 12pt;
 	margin-left: 8px;
-	padding: 5px 9px;
-}
-
-button.flawless-toggle:hover {
-	border-color: var(--ats-gold);
-	color: var(--ats-bright-gold);
-}
-
-button.flawless-toggle-active {
-	background: var(--ats-gold);
-	border-color: var(--ats-bright-gold);
-	color: var(--ats-dark);
-	font-weight: 600;
+	padding: 3px 10px;
 }
 
 .affinity-picker .affinity-portrait {
@@ -402,38 +747,198 @@ button.flawless-toggle-active {
     border-color: var(--ats-gold, gold);
 }
 
-/* Mini species portraits next to products a selected species needs */
-.data-table td > * > img.liked-badge {
-    width: 20px;
-    height: 20px;
-    margin-left: 4px;
-    vertical-align: middle;
-    border-radius: 3px;
-    border-image: none;
-    border-width: 0;
-    cursor: default;
+/* Best Buildings table: the Buildings table's rows, with the score on the building's icon */
+/* The Buildings and Best Buildings panels fill the page up to a comfortable reading width */
+div.buildings-panel.ats-container,
+div.best-buildings.ats-container {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 850px;
 }
 
-.affinity-score {
-    float: right;
-    color: var(--ats-yellow, gold);
-    font-weight: bold;
-    margin: 0 8px;
+div.best-buildings.ats-container {
+	max-width: 1000px;
 }
 
-/* Worker bonus markers next to the building name */
-.prof-badge,
-.comfort-badge {
-    margin-left: 8px;
-    white-space: nowrap;
+.best-table th:nth-child(1) { width: 34%; }
+.best-table th:nth-child(2) { width: 44%; }
+.best-table th:nth-child(3) { width: 22%; }
+
+/* A long product line wraps beside its icon rather than spill out of the cell */
+.buildings-table td:nth-child(2) .good-line {
+	display: flex;
+	align-items: center;
+	white-space: normal;
 }
 
-.prof-badge {
-    color: var(--ats-yellow, gold);
+/* Best Buildings' product lines also carry who needs it; several portraits wrap onto a new line */
+.best-table td:nth-child(2) .good-line {
+	flex-wrap: wrap;
+	row-gap: 2px;
 }
 
-.comfort-badge {
-    color: #e88470;
+.buildings-table td:nth-child(2) .good-line > img {
+	flex: none;
+}
+
+.buildings-table td:nth-child(2) .good-line > img:first-child {
+	margin-right: 0.4em;
+}
+
+.best-table .building-text {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.best-table .icon-with-score {
+	position: relative;
+	flex: none;
+	margin: 4px 14px 4px 2px;
+}
+
+.best-table .icon-with-score img.building-icon {
+	margin: 0;
+}
+
+.best-table .chip-badge.best-score {
+	top: auto;
+	right: -12px;
+	bottom: -8px;
+	justify-content: center;
+	min-width: 26px;
+	height: 26px;
+	padding: 0 4px;
+	box-sizing: border-box;
+	border: 2px ridge var(--ats-brown);
+	border-radius: 13px;
+	color: var(--ats-yellow);
+	font-family: var(--ats-font-heading), serif;
+	font-size: 11pt;
+	font-weight: 600;
+	letter-spacing: 0;
+}
+
+/* Worker bonuses: a portrait per species, its bonuses in a corner badge (gears, heart) */
+.best-table .bonus-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 9px;
+	padding-top: 3px;
+}
+
+.best-table .worker-bonus {
+	position: relative;
+	display: inline-flex;
+}
+
+.best-table .worker-bonus:has(.chip-badge:hover),
+.best-table .worker-bonus:has(.chip-badge:focus-visible) {
+	z-index: 30;
+}
+
+.best-table .worker-bonus > .worker-bonus-badge {
+	top: -6px;
+	right: -7px;
+	gap: 0;
+	padding: 0 1px;
+	border-radius: 7px;
+}
+
+/* Font Awesome moves the icon class onto the SVG it nests in the <i>, so size the <i> itself */
+.best-table .worker-bonus-badge > i {
+	width: 12px;
+	height: 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 7px;
+	line-height: 1;
+}
+
+.best-table .fa-gears {
+	color: var(--ats-yellow);
+}
+
+.best-table .fa-heart {
+	color: #e88470;
+}
+
+.best-table .tip-row > i {
+	width: 14px;
+	text-align: center;
+}
+
+.best-table .spec-tag {
+	display: inline-flex;
+	align-items: center;
+}
+
+/* The game's proficiency or comfort icon, in place of its name (no frame, like in the game) */
+.best-table .chip-badge .chip-badge-tip img.spec-icon {
+	width: 20px;
+	height: 20px;
+	object-fit: contain;
+	border: 0;
+	border-image: none;
+}
+
+/* Small species portraits, with the goods icons' gold frame */
+.data-table td .worker-bonus > img,
+.data-table td .good-line img.need-portrait {
+	width: 20px;
+	height: 20px;
+	border: 4px solid transparent;
+	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 2px;
+	vertical-align: middle;
+	cursor: default;
+}
+
+.best-table .good-line img.need-portrait {
+	cursor: inherit;
+}
+
+/* In the table the portraits follow the product's name; the cards put them under it */
+@container page (min-width: 500px) {
+	.best-table .need-portraits {
+		display: contents;
+	}
+
+	.best-table .good-line img.need-portrait {
+		margin-left: 5px;
+	}
+
+	.best-table .grade + .need-portraits > img.need-portrait:first-child {
+		margin-left: 10px;
+	}
+}
+
+/* No selected species needs this product */
+.best-table .good-line.unwanted {
+	opacity: 0.55;
+}
+
+/* Tooltip rows: icons and text on one line, so the box widens to fit */
+.best-table .chip-badge-tip {
+	flex-direction: column;
+	align-items: flex-start;
+	max-width: none;
+	left: 0;
+	transform: none;
+}
+
+.best-table .tip-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	white-space: nowrap;
+}
+
+.best-table .tip-total {
+	align-self: stretch;
+	border-top: 1px solid #59482d;
+	padding-top: 3px;
+	font-weight: 600;
 }
 
 .affinity-hint {
@@ -569,7 +1074,7 @@ td:has(> div.ats-building-icon) {
     margin: 0 2px 0 2px;
 }
 
-@media only screen and (max-width: 767px) {
+@container page (max-width: 747px) {
     .ats-table-recipe .ats-building-icon img, .ats-table-recipe .ats-single-ingredient-icon img, .icon-row .ats-single-ingredient-icon img, .ats-table-recipe .ats-product-icon img {
         border-image-slice: 5;
     }
@@ -624,39 +1129,94 @@ td:has(> div.ats-building-icon) {
     flex-wrap: wrap;
 }
 
-/*
- * Species Needs grid sizing. Each mode sets the same named sizes; the rules below only use the names.
- *   desktop       (default)
- *   phone         (max-width: 767px)  all 7 columns fit on a 360px-wide screen
- *   narrow phone  (max-width: 359px)  all 7 columns still fit down to 320px
- * --columns (the longest row) is set by NEEDS_GRID_COLUMNS in index.html.
- */
-.needs-grid {
+/* Upper half (Ingredient Grid and Species Needs) sizing: both panels use these sizes, and the
+   steps below tighten them as the frame narrows. The page's frame-width steps are the phone
+   window width less 20px, but the three widest here (1358, 1338, 1185px) are for a desktop
+   window: less Firefox's 17px scrollbar and the wider side margins. */
+.needs-grid,
+.ingredient-grid {
     --icon-size: 50px;
     --icon-padding: 10px;
     --icon-gap: 5px;
+    --panel-padding: 12px;
+}
+
+.needs-grid {
     --ring-margin: 2px;
     --ring-t: 4px;    /* species ring thickness */
-    --panel-padding: 12px;
     /* One icon cell: image, padding and species-ring margin on both sides, plus the gap around it */
     --icon-cell: calc(var(--icon-size) + 2 * var(--icon-padding) + 2 * var(--ring-margin) + 2 * var(--icon-gap));
 }
 
-@media only screen and (max-width: 767px) {    /* phone */
-    .needs-grid {
-        --icon-size: 25px;
-        --icon-padding: 4px;
-        --icon-gap: 2px;
-        --ring-t: 3px;
+.ingredient-grid {
+    --ig-columns: 8;
+    /* One icon cell: image and its 2px side margins (the frame rule above), padding, gap */
+    --icon-cell: calc(var(--icon-size) + 4px + 2 * var(--icon-padding) + 2 * var(--icon-gap));
+}
+
+@container page (max-width: 1358px) {
+    .needs-grid,
+    .ingredient-grid {
         --panel-padding: 6px;
     }
 }
 
-@media only screen and (max-width: 359px) {    /* narrow phone */
-    .needs-grid {
-        --icon-padding: 2px;
+@container page (max-width: 1338px) {
+    .needs-grid,
+    .ingredient-grid {
+        --icon-padding: 6px;
+        --icon-gap: 2px;
+    }
+}
+
+@container page (max-width: 1185px) {
+    .ingredient-grid .grid-legend {
+        display: none;
+    }
+}
+
+@container page (max-width: 625px) {
+    .needs-grid,
+    .ingredient-grid {
+        --icon-size: 30px;
+        --icon-padding: 3px;
+        --ring-t: 3px;
+    }
+}
+
+@container page (max-width: 339px) {
+    .needs-grid,
+    .ingredient-grid {
+        --icon-size: 28px;
         --icon-gap: 1px;
     }
+
+    /* The panels' outer margins give up their room too */
+    #block_1 .container-block-item {
+        margin: 10px 4px;
+    }
+}
+
+/* The Ingredient Grid keeps 8 columns while there's room, so the goods stay where you know them */
+div.ingredient-grid.ats-container {
+    max-width: none;
+    padding: 0 var(--panel-padding);
+}
+
+.ingredient-grid .icon-row {
+    justify-content: center;
+    max-width: calc(var(--ig-columns) * var(--icon-cell));
+    margin: 0 auto;
+}
+
+.ingredient-grid .icon {
+    margin: var(--icon-gap);
+    padding: var(--icon-padding);
+}
+
+.ingredient-grid .icon img {
+    width: var(--icon-size);
+    height: var(--icon-size);
 }
 
 div.ats-container.needs-grid {
@@ -689,7 +1249,52 @@ div.ats-container.needs-grid {
     border-top: 1px solid var(--ats-color-brown-divider);
 }
 
-/* Species Needs Overlap table: header and need rows share the same columns */
+/* Species Needs Overlap table: header and need rows share the same columns.
+   Smaller icons on phones, like the Species Needs grid, so all 8 columns fit */
+div.overlap-grid.ats-container {
+	box-sizing: border-box;
+	max-width: 800px;
+}
+
+/* Desktop keeps a 740px minimum, giving way before it would overflow the page */
+@container page (min-width: 748px) {
+	div.overlap-grid.ats-container {
+		min-width: min(740px, 100vw - 50px);
+	}
+}
+
+@container page (max-width: 747px) {    /* phone: fits a 360px screen */
+	div.overlap-grid.ats-container {
+		padding: 0 6px;
+	}
+
+	.overlap-grid .icon {
+		margin: 1px;
+		padding: 4px;
+	}
+
+	.overlap-grid .overlap-label {
+		padding-right: 6px;
+	}
+
+	/* A 2px frame, inside the gap between these small cells */
+	.overlap-grid .icon-row .ats-single-ingredient-icon img {
+		border-image-width: 2px;
+		border-image-outset: 2px;
+	}
+}
+
+@container page (max-width: 339px) {    /* narrow phone: fits a 320px screen */
+	.overlap-grid .icon {
+		padding: 1px;
+	}
+
+	/* "Species Needs Overlap" stays on one line in the header bar */
+	.overlap-grid .grid-header {
+		letter-spacing: 0.05em;
+	}
+}
+
 .overlap-grid .icon-row {
     flex-wrap: nowrap;
     justify-content: center;
@@ -705,6 +1310,15 @@ div.ats-container.needs-grid {
     padding-right: 15px;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+/* A dimmed need dims its icon only, so the divider beside it stays one unbroken line */
+.overlap-grid .overlap-label.icon-inactive {
+    opacity: 1;
+}
+
+.overlap-grid .overlap-label.icon-inactive img {
+    opacity: 0.2;
 }
 
 .icon {
@@ -723,7 +1337,7 @@ div.ats-container.needs-grid {
     object-fit: contain;
 }
 
-@media only screen and (max-width: 767px) {
+@container page (max-width: 747px) {
     .icon {
         padding: 5px;
     }
@@ -834,8 +1448,11 @@ div.ats-container.needs-grid {
 	border-radius: 3px;
 }
 
-.sacred-grove-warning::after {
-	content: attr(data-tooltip);
+/* The same tooltip names the Suggestor's ingredient chips and, as a real element, explains their
+   status badges */
+.sacred-grove-warning::after,
+.hover-tip::after,
+.chip-badge-tip {
 	position: absolute;
 	top: calc(100% + 6px);
 	left: 50%;
@@ -863,10 +1480,58 @@ div.ats-container.needs-grid {
 	transition: opacity 0.15s ease;
 }
 
+.sacred-grove-warning::after,
+.hover-tip::after {
+	content: attr(data-tooltip);
+}
+
 .sacred-grove-warning:hover::after,
-.sacred-grove-warning:focus::after {
+.sacred-grove-warning:focus::after,
+.hover-tip:hover::after,
+.hover-tip:focus-visible::after,
+.chip-badge:hover > .chip-badge-tip,
+.chip-badge:focus-visible > .chip-badge-tip {
 	opacity: 1;
 	visibility: visible;
+}
+
+/* On phones a hidden tooltip takes no space, so it can't widen the page */
+@container page (max-width: 747px) {
+	.sacred-grove-warning:not(:hover):not(:focus)::after,
+	.hover-tip:not(:hover):not(:focus-visible)::after,
+	.chip-badge:not(:hover):not(:focus-visible) > .chip-badge-tip {
+		display: none;
+	}
+}
+
+/* "Satisfied by" / "Required blueprints:" followed by the goods' icons, wrapping when long */
+.chip-badge-tip {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+}
+
+.chip-badge .chip-badge-tip img {
+	width: 20px;
+	height: 20px;
+	border: 2px solid transparent;
+	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 1px;
+}
+
+/* Raise the hovered chip or badge so its tooltip sits above its neighbours */
+.ingredient-slot:hover,
+.ingredient-slot:focus-within,
+.chip-badge:hover,
+.chip-badge:focus-visible {
+	z-index: 30;
+}
+
+/* Pointing at a badge shows only the badge's tooltip, not the chip's as well */
+.ingredient-slot:has(> .chip-badge:hover) > .hover-tip::after,
+.ingredient-slot:has(> .chip-badge:focus-visible) > .hover-tip::after {
+	opacity: 0;
+	visibility: hidden;
 }
 
 /* Other */
@@ -975,8 +1640,8 @@ input:checked + .slider:before {
     z-index: 1;
     width: 250px;
     bottom: 130%;
-    left: 50%;
-    margin-left: -125px;
+    /* The switch sits at the header's right end, so its tooltip opens leftwards */
+    right: 0;
 }
 
 .tooltip:hover .tooltiptext {
@@ -1027,15 +1692,6 @@ input:checked + .slider:before {
 	cursor: pointer;
 }
 
-.suggestor-dimmed img {
-	opacity: 0.2;
-}
-
-.suggestor-dimmed span {
-	opacity: 0.5;
-	font-style: italic;
-}
-
 table.data-table tr.suggestor-row-dimmed td {
 	opacity: 0.5;
 	font-style: italic;
@@ -1045,63 +1701,121 @@ table.data-table tr.suggestor-row-dimmed td img {
 	opacity: 0.2;
 }
 
-/* Ingredient tree checkboxes */
-.ingredient-tree-container {
+/* Suggestor ingredient tree as an outline: one slot per line, sub-recipes indented beneath */
+.ingredient-tree {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	align-items: flex-start;
+	gap: 5px;
 	margin-top: 6px;
 }
 
-.ingredient-tree-row {
-	display: flex;
-	align-items: flex-start;
-	gap: 4px;
-}
-
-.ingredient-tree-columns {
-	display: flex;
-	gap: 8px;
-	align-items: flex-start;
-}
-
-.ingredient-tree-column {
-	min-width: 0;
+.ingredient-branch {
 	display: flex;
 	flex-direction: column;
-	align-items: stretch;
+	align-items: flex-start;
+	min-width: 0;
 }
 
-.ingredient-tree-column > .ingredient-tree-container {
-	margin-top: 4px;
+/* A sub-recipe hangs under its chip, with a thin line showing which chip it belongs to */
+.ingredient-branch > .ingredient-tree {
+	margin: 4px 0 0 8px;
+	padding-left: 8px;
+	border-left: 1px solid var(--ats-color-brown-divider);
 }
 
+/* A tree chip and its badge sit side by side, so the badge isn't inside a chip that acts as a button */
+.ingredient-slot {
+	position: relative;
+	display: inline-flex;
+}
+
+/* One ingredient slot of a recipe: a small coloured chip sized to its contents (not a full-width bar) */
 .ingredient-group-box {
+	position: relative;
 	display: inline-flex;
 	align-items: center;
-	gap: 2px;
-	padding: 2px 4px;
-	border-radius: 3px;
-	min-width: 28px;
-	height: 28px;
+	gap: 4px;
+	padding: 3px 7px 3px 5px;
+	border-radius: 4px;
+	min-width: 34px;
+	min-height: 36px;
 	box-sizing: border-box;
 }
 
-.ingredient-group-box .group-check {
-	color: #15cf00;
-	font-size: 14px;
-}
-
-.ingredient-group-box img {
-	width: 24px;
-	height: 24px;
+.ingredient-group-box[data-tooltip] {
 	cursor: pointer;
 }
 
-.ingredient-group-raw-alt {
+.ingredient-group-box.ingredient-foldable:focus-visible {
+	outline: 2px solid var(--ats-yellow);
+	outline-offset: 2px;
+}
+
+/* The only option for a slot, shown before it can be made: no check mark, dimmed icon */
+.ingredient-group-box.ingredient-missing > img {
+	opacity: 0.45;
+}
+
+/* Top level of the tree: the slots sit in one row; open branches hang under their chip */
+.ingredient-tree.ingredient-tree-top {
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 8px 10px;
+}
+
+/* Status badge in a chip's corner: a check (fully satisfied) or a hammer (needs a blueprint) */
+.chip-badge {
+	position: absolute;
+	top: -8px;
+	right: -8px;
+	display: inline-flex;
+	align-items: center;
+	gap: 1px;
+	padding: 1px;
+	border-radius: 9px;
+	background: rgba(8, 16, 7, 0.85);
+	cursor: help;
+}
+
+.chip-badge:has(.chip-badge-count) {
+	padding-right: 3px;
+}
+
+.chip-badge .fa-check,
+.chip-badge .fa-hammer {
+	width: 16px;
+	height: 16px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	font-size: 10px;
-	opacity: 0.85;
-	margin-left: 2px;
+}
+
+.chip-badge-done .fa-check {
+	color: #15cf00;
+}
+
+.chip-badge-blueprint .fa-hammer,
+.look-out-badge .fa-hammer {
+	color: var(--ats-yellow);
+}
+
+.chip-badge-count {
+	font-size: 10px;
+	line-height: 1;
+	color: var(--ats-color-white);
+}
+
+/* Goods icons in the Suggestor get the same gold frame as icons elsewhere */
+.ingredient-group-box img,
+.suggestor-table .look-out-for-item img,
+.suggestor-table .slot-entries img {
+	width: 22px;
+	height: 22px;
+	border: 3px solid transparent;
+	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 1px;
+	cursor: pointer;
 }
 
 .look-out-for-item {
@@ -1110,12 +1824,89 @@ table.data-table tr.suggestor-row-dimmed td img {
 	line-height: 1.5;
 }
 
-.look-out-for-raw-group {
+/* Icons wrap onto a new line when there are many; the label ("One of") never breaks */
+.look-out-for-group {
 	display: inline-flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 2px;
 	padding: 2px 4px;
 	border-radius: 3px;
+}
+
+.look-out-label {
+	white-space: nowrap;
+	margin-right: 2px;
+}
+
+/* Service buildings and blueprints: same chip as a slot's "One of" line, in a neutral tint */
+.look-out-for-service,
+.look-out-for-blueprint {
+	background-color: rgba(226, 205, 157, 0.12);
+}
+
+/* A made good that isn't ready: a corner pill with a hammer (needs a blueprint) and/or a ring
+   (needs ingredients) */
+.look-out-icon {
+	position: relative;
+	display: inline-flex;
+	margin: 0 1px;
+}
+
+.look-out-icon:has(.chip-badge:hover),
+.look-out-icon:has(.chip-badge:focus-visible) {
+	z-index: 30;
+}
+
+.look-out-icon > .look-out-badge {
+	top: -6px;
+	right: -7px;
+	gap: 0;
+	padding: 0 1px;
+	border-radius: 7px;
+}
+
+.look-out-badge .fa-hammer,
+.look-out-badge .look-out-ring {
+	width: 12px;
+	height: 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 7px;
+}
+
+.look-out-badge .look-out-ring {
+	width: 10px;
+	height: 10px;
+	margin: 1px;
+	color: #9fd3ff;
+}
+
+/* One row per tooltip line, each kept on one line */
+.look-out-badge .chip-badge-tip {
+	flex-direction: column;
+	align-items: flex-start;
+	max-width: none;
+}
+
+.look-out-tip-row {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	white-space: nowrap;
+}
+
+.suggestor-table .look-out-badge .chip-badge-tip img {
+	width: 20px;
+	height: 20px;
+	border-width: 2px;
+	cursor: default;
+}
+
+.suggestor-table .look-out-for-item img.service-building-icon,
+.suggestor-table .slot-entries img.service-building-icon {
+	cursor: default;
 }
 
 .need-missing-count {
@@ -1123,10 +1914,393 @@ table.data-table tr.suggestor-row-dimmed td img {
 	opacity: 0.85;
 }
 
+/* Suggestor panel: raw resources | table | blueprints. The steps below go by the frame's width;
+   below 460px the lists move above the table and the rows become cards. */
 .suggestor-main.ats-container {
-	padding-left: 4px;
-	padding-right: 4px;
-	border-image-outset: 0px 2px 0px 2px;
+	display: grid;
+	/* Each list fits its longest label on one line ("Clearance Water", "Crystalized Dew") */
+	grid-template-columns: minmax(170px, 232px) minmax(0, 1fr) minmax(170px, 232px);
+	grid-template-areas: "raw need have";
+	column-gap: 18px;
+	align-items: start;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 1200px;
+	min-width: 0;
+	margin: 0 auto;
+	padding: 0 18px 12px;
+}
+
+.suggestor-raw { grid-area: raw; }
+.suggestor-have { grid-area: have; }
+.suggestor-suggested-need { grid-area: need; min-width: 0; }
+
+.suggestor-side {
+	min-width: 0;
+	text-align: left;
+}
+
+.suggestor-list {
+	display: flex;
+	flex-direction: column;
+	padding: 8px 0;
+}
+
+/* The lists' headings shorten to one word when the lists narrow */
+.suggestor-side-short {
+	display: none;
+}
+
+@container page (max-width: 1199px) {
+	.suggestor-main.ats-container {
+		column-gap: 10px;
+		padding: 0 8px 12px;
+	}
+}
+
+@container page (max-width: 1009px) {
+	.suggestor-main.ats-container {
+		grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) minmax(96px, 150px);
+	}
+
+	.suggestor-side-long {
+		display: none;
+	}
+
+	.suggestor-side-short {
+		display: inline;
+	}
+
+	.suggestor-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+		gap: 4px;
+		justify-items: center;
+	}
+
+	.suggestor-list .suggestor-subheading {
+		grid-column: 1 / -1;
+		justify-self: stretch;
+	}
+
+	/* Each item is a 44px tap target: the icon, with the checkbox small in its corner */
+	.suggestor-raw-resource {
+		position: relative;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		gap: 0;
+		padding: 0;
+	}
+
+	.suggestor-raw-resource > span {
+		display: none;
+	}
+
+	.suggestor-raw-resource input[type="checkbox"] {
+		position: absolute;
+		top: -2px;
+		right: -2px;
+		width: 13px;
+		height: 13px;
+		margin: 0;
+	}
+}
+
+/* Where :has() works, unticked icons dim and a ticked one gets a gold edge; the checkbox stays
+   for keyboards and screen readers, just not drawn */
+@container page (max-width: 1009px) {
+	@supports selector(:has(*)) {
+		.suggestor-raw-resource input[type="checkbox"] {
+			width: 1px;
+			height: 1px;
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		.suggestor-raw-resource:not(:has(input:checked)) img {
+			opacity: 0.45;
+		}
+
+		/* A gold edge, not a check: on the cards a check means "ready" */
+		.suggestor-raw-resource:has(input:checked) img {
+			outline: 2px solid var(--ats-yellow);
+			outline-offset: 2px;
+			border-radius: 2px;
+		}
+
+		.suggestor-raw-resource:has(input:focus-visible) {
+			outline: 2px solid var(--ats-bright-blue);
+			outline-offset: 1px;
+		}
+	}
+}
+
+/* The lists narrow to two icons a row, and the table's columns follow their content */
+@container page (max-width: 899px) {
+	.suggestor-main.ats-container {
+		grid-template-columns: 96px minmax(0, 1fr) 96px;
+	}
+
+	table.suggestor-table {
+		table-layout: auto;
+	}
+
+	.suggestor-table th:nth-child(n) {
+		width: auto;
+	}
+
+	/* "Resources" and "Blueprints" fit the 96px lists on one line */
+	.suggestor-side > .grid-header {
+		font-size: 11pt;
+	}
+}
+
+@container page (max-width: 829px) {
+	.suggestor-table .look-out-label {
+		display: none;
+	}
+}
+
+/* The lists narrow to one icon a row, their headings drop, and the group headings become dividers */
+@container page (max-width: 649px) {
+	.suggestor-main.ats-container {
+		grid-template-columns: 44px minmax(0, 1fr) 44px;
+		column-gap: 8px;
+		padding: 0 10px 12px;
+	}
+
+	.suggestor-side > .grid-header {
+		display: none;
+	}
+
+	/* The lists start level with the table's column titles: the heading gets a row of its own */
+	.suggestor-main.ats-container {
+		grid-template-areas: ". head ." "raw need have";
+	}
+
+	.suggestor-suggested-need {
+		display: contents;
+	}
+
+	.suggestor-suggested-need > .grid-header {
+		grid-area: head;
+	}
+
+	.suggestor-suggested-need > .icon-grid-wrapper {
+		grid-area: need;
+		min-width: 0;
+	}
+
+	/* ...and skip the table's top margin, padding and row spacing */
+	.suggestor-list {
+		grid-template-columns: 44px;
+		padding-top: calc(4px + 10px + 8px);
+	}
+
+	.suggestor-list .suggestor-subheading {
+		height: 0;
+		margin: 6px 0;
+		padding: 0;
+		overflow: hidden;
+	}
+
+	/* No divider above the first group, so the two lists line up */
+	.suggestor-list .suggestor-subheading:first-child {
+		display: none;
+	}
+}
+
+/* Phone-only parts, hidden until the cards below */
+.suggestor-subheading-raw,
+.suggestor-section-count,
+.slot-entries {
+	display: none;
+}
+
+/* Phones: the lists sit above the table as four always-open sections with their ticked counts,
+   and each row becomes a card with one entry per recipe slot (SlotEntries in index.html) */
+@container page (max-width: 459px) {
+	.suggestor-main.ats-container {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas: "raw" "have" "need";
+		row-gap: 0;
+	}
+
+	/* The heading goes back inside the table's area, below the lists */
+	.suggestor-suggested-need {
+		display: block;
+	}
+
+	.suggestor-side > .icon-grid-wrapper {
+		padding: 0;
+	}
+
+	.suggestor-list {
+		grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+		gap: 3px;
+		justify-items: stretch;
+		padding: 0 0 4px;
+	}
+
+	/* Section headings: the narrow lists' dividers get their names back, plus the count */
+	.suggestor-list .suggestor-subheading,
+	.suggestor-list .suggestor-subheading:first-child {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		height: auto;
+		overflow: visible;
+		margin: 0 0 3px;
+		padding: 6px 2px 3px;
+		font-size: 10.5pt;
+		line-height: 1.2;
+	}
+
+	.suggestor-section-count {
+		display: inline;
+		margin-left: auto;
+		color: var(--ats-color-white);
+		font-family: var(--ats-font-body), sans-serif;
+		font-variant: normal;
+		font-size: 9pt;
+		letter-spacing: 0;
+		opacity: 0.75;
+	}
+
+	/* Each item is a square the icon fills */
+	.suggestor-raw-resource {
+		width: auto;
+		height: auto;
+		aspect-ratio: 1;
+		padding: 0;
+	}
+
+	.suggestor-raw-resource img {
+		box-sizing: border-box;
+		width: 100%;
+		height: 100%;
+		border-width: 3px;
+		border-image-outset: 0;
+	}
+
+	/* The ticked gold edge sits on the icon's frame, inside the 3px gap */
+	.suggestor-raw-resource:has(input:checked) img {
+		outline-offset: -1px;
+	}
+
+	/* Cards */
+	table.suggestor-table,
+	.suggestor-table tbody {
+		display: block;
+		margin: 0;
+	}
+
+	.suggestor-table thead {
+		display: none;
+	}
+
+	.suggestor-table tbody tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas: "item species" "look look";
+		align-items: center;
+		margin: 8px 0;
+		padding: 6px 6px 4px;
+		border: 2px ridge var(--ats-brown);
+		background: rgba(0, 0, 0, 0.2);
+	}
+
+	.suggestor-table td,
+	.suggestor-table td:first-child,
+	.suggestor-table td:last-child {
+		display: block;
+		min-width: 0;
+		padding: 0;
+		border: none;
+	}
+
+	.suggestor-table td:first-child {
+		display: contents;
+	}
+
+	.suggestor-table .item-cell {
+		grid-area: item;
+		margin: 0;
+	}
+
+	/* A display: contents cell can't be faded, so a dimmed card fades its icon and name here */
+	table.data-table tr.suggestor-row-dimmed .item-cell {
+		opacity: 0.5;
+	}
+
+	.suggestor-table td:nth-child(2) {
+		grid-area: species;
+	}
+
+	.suggestor-table td:nth-child(3) {
+		grid-area: look;
+		margin-top: 8px;
+	}
+
+	.suggestor-table img.item-icon {
+		width: 34px;
+		height: 34px;
+		margin: 2px 10px 2px 2px;
+	}
+
+	.suggestor-table .item-cell > .chip-badge {
+		top: -4px;
+		left: 26px;
+	}
+
+	.suggestor-table .species-strip {
+		gap: 4px;
+		max-width: none;
+	}
+
+	.suggestor-table .species-strip img {
+		width: 22px;
+		height: 22px;
+	}
+
+	.suggestor-table .ingredient-tree-top,
+	.suggestor-table .look-out-for-item {
+		display: none;
+	}
+
+	.suggestor-table .slot-entries {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		line-height: 1;
+	}
+
+	.slot-entries .look-out-for-group {
+		gap: 2px 3px;
+		padding: 3px 4px;
+	}
+
+	.slot-entries .slot-nested {
+		margin-left: 4px;
+		padding: 2px 3px;
+	}
+
+	/* The good a slot uses: its check or hammer is the small pill size of the options' badges */
+	.slot-used > .chip-badge {
+		top: -6px;
+		right: -7px;
+		padding: 0 1px;
+		border-radius: 7px;
+	}
+
+	.slot-used > .chip-badge .fa-check,
+	.slot-used > .chip-badge .fa-hammer {
+		width: 12px;
+		height: 12px;
+		font-size: 7px;
+	}
 }
 
 .suggestor-data-table {
@@ -1163,14 +2337,15 @@ table.data-table tr.suggestor-row-dimmed td img {
 
 /* Font awesome icons */
 
-h1 > a > .svg-inline--fa {
+/* The script nests each <svg> inside its <i> and moves the icon classes onto the <svg> (see index.html) */
+h1 > a .svg-inline--fa {
     font-size: 20pt;
     color: var(--ats-gold, #a79372);
     float: right;
     padding: 10px 15px 0px 0px
 }
 
-h1 > a > .svg-inline--fa:hover {
+h1 > a .svg-inline--fa:hover {
     color: var(--ats-color-white, #dedede);
 }
 
@@ -1197,4 +2372,356 @@ button.state-reset {
 button.state-reset:hover {
 	color: var(--ats-bright-gold);
 	border-color: var(--ats-gold);
+}
+
+/* Buildings and Best Buildings tables at narrow widths: names drop, then the rows become cards */
+@container page (max-width: 999px) {
+	div.best-buildings.ats-container {
+		padding: 0 4px;
+	}
+}
+
+@container page (max-width: 859px) {
+	div.buildings-panel.ats-container {
+		padding: 0 4px;
+	}
+}
+
+/* "Resource Gathering" and "Food Production" shorten before the category buttons wrap */
+@container page (max-width: 839px) {
+	.cat-label-extra {
+		display: none;
+	}
+}
+
+@container page (max-width: 739px) {
+	table.buildings-table {
+		table-layout: auto;
+	}
+
+	.buildings-table th:nth-child(n) {
+		width: auto;
+	}
+}
+
+@container page (max-width: 659px) {
+	.buildings-table td:nth-child(3) .good-name {
+		display: none;
+	}
+
+	/* The narrower cost column's header shortens from "Building Cost" to "Cost" */
+	.cost-header-building {
+		display: none;
+	}
+
+	/* As compact as the Buildings table's filter buttons */
+	button.ruins-toggle {
+		margin-left: 0;
+		font-size: 11pt;
+		padding: 1px 10px;
+	}
+}
+
+@container page (max-width: 599px) {
+	.buildings-table td:nth-child(2) .good-name {
+		display: none;
+	}
+}
+
+/* The products' star pills only show on the cards below */
+.grade-badge {
+	display: none;
+}
+
+/* Buildings and Best Buildings cards: icon and name on top, then the products and, past a divider,
+   the costs. Each good is one tap target, with its stars or amount as a corner badge. */
+@container page (max-width: 499px) {
+	table.buildings-table,
+	.buildings-table thead,
+	.buildings-table tbody {
+		display: block;
+	}
+
+	table.buildings-table {
+		padding: 0;
+	}
+
+	.buildings-table thead tr {
+		display: flex;
+		align-items: center;
+		border-bottom: 2px solid var(--ats-color-brown-divider);
+	}
+
+	.buildings-table th:nth-child(n) {
+		width: auto;
+		padding: 2px 4px 4px;
+		border-bottom: none;
+	}
+
+	.buildings-table th:nth-child(3) {
+		margin-left: auto;
+	}
+
+	.buildings-table tbody tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"building building"
+			"products cost";
+		margin: 8px 0;
+		padding: 6px 3px;
+		border: 2px ridge var(--ats-brown);
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+
+	.buildings-table tbody td:nth-child(n) {
+		display: flex;
+		align-items: center;
+		padding: 0;
+		border: none;
+		background: none;
+	}
+
+	.buildings-table tbody td:nth-child(1) { grid-area: building; padding-left: 3px; }
+	.buildings-table tbody td:nth-child(2) { grid-area: products; padding: 10px 4px 0 0; }
+	.buildings-table tbody td:nth-child(3) { grid-area: cost; padding-top: 10px; }
+
+	/* The divider between products and costs */
+	.buildings-table tbody td:nth-child(3)::before {
+		content: "";
+		height: 30px;
+		margin-right: 4px;
+		border-left: 2px ridge var(--ats-brown);
+	}
+
+	.buildings-table img.building-icon {
+		width: 30px;
+		height: 30px;
+		margin: 0 8px 0 0;
+	}
+
+	/* Slightly tighter, so the longest building name stays on one line */
+	.buildings-table .building-name {
+		letter-spacing: 0.06em;
+	}
+
+	.buildings-table td .good-line {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		width: 38px;
+		height: 40px;
+		margin: 0;
+	}
+
+	.buildings-table td .good-line > img,
+	.buildings-table td:nth-child(2) .good-line > img:first-child {
+		width: 26px;
+		height: 26px;
+		margin: 0;
+	}
+
+	/* The written stars stay for screen readers; the pill shows them */
+	.buildings-table .good-line .grade {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+
+	.buildings-table .grade-badge {
+		position: absolute;
+		top: -5px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: inline-flex;
+		padding: 2px;
+		border-radius: 8px;
+		background: rgba(8, 16, 7, 0.9);
+		color: var(--ats-yellow);
+		font-size: 9px;
+		line-height: 1;
+		letter-spacing: 0;
+		white-space: nowrap;
+		pointer-events: none;
+	}
+
+	.grade-badge-hollow {
+		opacity: 0.75;
+	}
+
+	.buildings-table .good-amount {
+		position: absolute;
+		top: -3px;
+		right: -3px;
+		min-width: 15px;
+		height: 15px;
+		margin: 0;
+		padding: 0 3px;
+		box-sizing: border-box;
+		border-radius: 8px;
+		background: rgba(8, 16, 7, 0.9);
+		color: var(--ats-color-white);
+		font-size: 10px;
+		font-weight: 600;
+		line-height: 15px;
+		letter-spacing: 0;
+		text-align: center;
+		pointer-events: none;
+	}
+
+	.buildings-table tbody tr.category-row,
+	.buildings-table tbody tr.empty-row {
+		display: block;
+		margin: 0;
+		padding: 0;
+		border: none;
+		background: none;
+	}
+
+	.buildings-table tbody tr.category-row td,
+	.buildings-table tbody tr.empty-row td {
+		display: block;
+	}
+
+	.buildings-table tbody tr.category-row td {
+		padding: 10px 2px 0;
+	}
+
+	.buildings-table tbody tr.empty-row td {
+		padding: 14px 10px;
+		border: 2px ridge var(--ats-brown);
+	}
+
+	/* A card shows what each part is, so Best Buildings' column titles drop */
+	.best-table thead {
+		display: none;
+	}
+
+	/* The table-only portrait rules above are scoped to match this block */
+
+	/* Products and costs line up along their tops, since portraits hang under some products */
+	.best-table tbody td:nth-child(2),
+	.best-table tbody td:nth-child(3) {
+		align-items: flex-start;
+	}
+
+	.best-table tbody td:nth-child(3)::before {
+		margin-top: 5px;
+	}
+
+	.best-table .building-cell {
+		align-items: center;
+	}
+
+	.best-table .building-text {
+		gap: 3px;
+		min-width: 0;
+	}
+
+	.best-table .icon-with-score {
+		margin: 0 16px 0 0;
+	}
+
+	.best-table .icon-with-score img.building-icon {
+		margin: 0;
+	}
+
+	/* A smaller medallion, with an invisible margin so it is still about 40px to tap */
+	.best-table .chip-badge.best-score {
+		right: -10px;
+		bottom: -7px;
+		min-width: 20px;
+		height: 20px;
+		padding: 0 3px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: var(--ats-yellow);
+		border-radius: 10px;
+		font-size: 9pt;
+	}
+
+	.best-table .chip-badge.best-score::before {
+		content: "";
+		position: absolute;
+		top: -10px;
+		right: -10px;
+		bottom: -10px;
+		left: -10px;
+	}
+
+	/* The score breakdown fits the phone: its rows wrap instead of running off the right edge */
+	.best-table .chip-badge.best-score .chip-badge-tip {
+		max-width: min(260px, calc(100vw - 80px));
+	}
+
+	.best-table .chip-badge.best-score .tip-row {
+		flex-wrap: wrap;
+		white-space: normal;
+	}
+
+	.best-table .bonus-row {
+		gap: 10px;
+		padding-top: 2px;
+	}
+
+	.best-table td .worker-bonus > img {
+		width: 16px;
+		height: 16px;
+		border-width: 3px;
+	}
+
+	.best-table td .good-line {
+		flex-direction: column;
+		justify-content: flex-start;
+		height: auto;
+		min-height: 40px;
+	}
+
+	/* 26px plus its 4px frame, centered in the 40px cell */
+	.best-table td .good-line > img,
+	.best-table td:nth-child(2) .good-line > img:first-child {
+		margin: 3px 0;
+	}
+
+	.best-table .need-portraits {
+		display: grid;
+		grid-template-columns: repeat(2, 15px);
+		gap: 2px;
+		justify-content: center;
+	}
+
+	.best-table td .need-portraits > img.need-portrait {
+		width: 15px;
+		height: 15px;
+		margin: 0;
+		border: none;
+		border-image: none;
+		border-radius: 3px;
+		box-shadow: 0 0 0 1px rgba(226, 205, 157, 0.55);
+	}
+}
+
+/* The species pickers (Best Buildings, Suggestor) keep to one line: the label drops, then the
+   portraits shrink */
+@container page (max-width: 434px) {
+	/* Hidden from view only: screen readers still announce "Species:" before the portraits */
+	.affinity-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+}
+
+@container page (max-width: 369px) {
+	.affinity-picker .affinity-portrait {
+		width: 32px;
+		height: 32px;
+	}
 }
