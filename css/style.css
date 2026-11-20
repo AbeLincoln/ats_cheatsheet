@@ -132,10 +132,7 @@ body {
     text-align: center;
 }
 
-/* Side margins: 50px from about 1320px, where the widest content (the 1200px Suggestor) stops
-   growing, shrinking in a straight line to 8px (the phone layouts' margin) at 1210px. That's just
-   wide enough to keep the Suggestor's three columns (a 1170px frame, plus border, margins and a
-   scrollbar), so the margins give up their space before the layout has to change.
+/* Side margins: 50px on wide screens, shrinking to 8px at 1210px before any layout has to change.
    Top and bottom stay at 50px. */
 @media only screen and (min-width: 768px) {
     body {
@@ -154,10 +151,7 @@ hr {
 	margin: 10px;
 }
 
-/*
- * Lower-half buttons (tabs, Buildings filters, Best Buildings' Haunted Ruins toggle) share one game style:
- * dark green, gold small caps, thin brown border. The selected one gets a yellow edge and glow.
- */
+/* Lower-half buttons share the game's style; the selected one gets a yellow edge and glow */
 .tabs button,
 button.cat-active,
 button.cat-inactive,
@@ -206,10 +200,8 @@ button.ruins-toggle:focus-visible {
 	margin: 0 3px;
 }
 
-/* Page & tabs, step 2: once the four tabs no longer fit on one line (about 650px with a
-   scrollbar), the buttons tighten, keeping their full height; if they still don't fit they wrap
-   onto a second line */
-@media only screen and (max-width: 679px) {
+/* The tabs tighten once they no longer fit on one line, then wrap */
+@container page (max-width: 659px) {
 	.tabs {
 		flex-wrap: wrap;
 		gap: 4px 0;
@@ -234,7 +226,7 @@ button.ruins-toggle:focus-visible {
 }
 
 div.content {
-    /* Lets panels inside lay out by the frame's width (see the Suggestor panel) */
+    /* Panels inside lay out by the frame's width (container queries) */
     container: page / inline-size;
     background: #f8f9fa;
     border: solid #eaecf0;
@@ -334,10 +326,7 @@ button.cat-inactive {
 	margin: 3px;
 }
 
-/*
- * Data tables (Buildings, Suggestor, Best Buildings): the wiki's recipe-table look.
- * Carved ridge borders, a see-through dark fill, tan uppercase headings, condensed uppercase cells.
- */
+/* Data tables (Buildings, Suggestor, Best Buildings): the wiki's recipe-table look */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -408,10 +397,7 @@ table.data-table > tbody > tr.category-row:hover {
     padding: 12px 2px 2px;
 }
 
-/*
- * Search box, or the picked ingredient in its place. The row keeps one height so the
- * table doesn't jump when an ingredient is picked or cleared.
- */
+/* Search box, or the picked ingredient in its place, at one height so the table doesn't jump */
 .filter-chip-row {
 	display: flex;
 	justify-content: center;
@@ -480,11 +466,8 @@ button.ingredient-chip-clear:focus-visible {
 	background-color: var(--ats-color-brown-divider);
 }
 
-/*
- * Buildings table layout: each building is its own carved row with a gap between rows,
- * like the wiki's recipe tables. No lines between the columns inside a row.
- * Fixed column widths, so filtering doesn't shift the columns (or the header buttons under the cursor).
- */
+/* Buildings table: one carved row per building, with fixed column widths so filtering doesn't
+   shift the columns */
 table.buildings-table {
 	border-collapse: separate;
 	border-spacing: 0 8px;
@@ -604,9 +587,12 @@ table.buildings-table {
 	letter-spacing: 0.08em;
 }
 
+/* The whole good (icon, amount, name) selects it in the Ingredient Grid */
 .buildings-table .good-line {
+	width: fit-content;
 	white-space: nowrap;
 	margin: 2px 0;
+	cursor: pointer;
 }
 
 .buildings-table .grade {
@@ -623,10 +609,7 @@ table.buildings-table {
 	text-align: right;
 }
 
-/*
- * Suggestor table layout: the same carved, separated rows as the Buildings table,
- * with fixed column widths so ticking resources doesn't shift the columns.
- */
+/* Suggestor table: the Buildings table's rows, with fixed column widths */
 table.suggestor-table {
 	border-collapse: separate;
 	border-spacing: 0 8px;
@@ -634,9 +617,7 @@ table.suggestor-table {
 	table-layout: fixed;
 }
 
-/* Measured at the widest layout (a 664px table): the longest card name ("Pickled Goods") and the
-   open trees need about 205px, two portraits per row 82px plus padding, and the longest Look out
-   for line about 300px */
+/* Shares that fit the longest name and open trees, the portraits, and the longest Look out for line */
 .suggestor-table th:nth-child(1) { width: 34%; }
 .suggestor-table th:nth-child(2) { width: 15%; }
 .suggestor-table th:nth-child(3) { width: 51%; }
@@ -731,6 +712,7 @@ table.suggestor-table {
 .affinity-picker {
     display: flex;
     align-items: center;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 4px;
     margin: 8px 0 4px 0;
@@ -765,10 +747,7 @@ button.ruins-toggle {
     border-color: var(--ats-gold, gold);
 }
 
-/*
- * Best Buildings table: the Buildings table's rows, with the score as a medallion on the
- * building icon's corner and the worker bonuses under the name.
- */
+/* Best Buildings table: the Buildings table's rows, with the score on the building's icon */
 /* The Buildings and Best Buildings panels fill the page up to a comfortable reading width */
 div.buildings-panel.ats-container,
 div.best-buildings.ats-container {
@@ -785,8 +764,7 @@ div.best-buildings.ats-container {
 .best-table th:nth-child(2) { width: 44%; }
 .best-table th:nth-child(3) { width: 22%; }
 
-/* A long product line wraps rather than spill out of its cell on narrow screens, and its
-   wrapped name stays beside the icon instead of dropping under it */
+/* A long product line wraps beside its icon rather than spill out of the cell */
 .buildings-table td:nth-child(2) .good-line {
 	display: flex;
 	align-items: center;
@@ -801,13 +779,6 @@ div.best-buildings.ats-container {
 
 .buildings-table td:nth-child(2) .good-line > img {
 	flex: none;
-}
-
-/* The whole good (icon, amount, name, who needs it) selects it in the Ingredient Grid, so a
-   card's 38 x 40px cell is all one tap target */
-.buildings-table .good-line {
-	width: fit-content;
-	cursor: pointer;
 }
 
 .buildings-table td:nth-child(2) .good-line > img:first-child {
@@ -848,8 +819,7 @@ div.best-buildings.ats-container {
 	letter-spacing: 0;
 }
 
-/* Worker bonuses: a portrait per species, with its bonuses in a corner badge like the Suggestor's
-   Look out for icons (gears = proficiency, heart = comfort) */
+/* Worker bonuses: a portrait per species, its bonuses in a corner badge (gears, heart) */
 .best-table .bonus-row {
 	display: flex;
 	flex-wrap: wrap;
@@ -913,8 +883,7 @@ div.best-buildings.ats-container {
 	border-image: none;
 }
 
-/* Small species portraits, on the bonuses and after products a selected species needs:
-   the same gold frame as the goods icons, so they stand out from the background */
+/* Small species portraits, with the goods icons' gold frame */
 .data-table td .worker-bonus > img,
 .data-table td .good-line img.need-portrait {
 	width: 20px;
@@ -929,10 +898,8 @@ div.best-buildings.ats-container {
 	cursor: inherit;
 }
 
-/* In the table the portraits follow the product's name, wrapping with it. Below 520px the
-   cards put them under the product instead: keep this width paired with the cards'
-   max-width: 519px block ("Buildings and Best Buildings cards") */
-@media only screen and (min-width: 520px) {
+/* In the table the portraits follow the product's name; the cards put them under it */
+@container page (min-width: 500px) {
 	.best-table .need-portraits {
 		display: contents;
 	}
@@ -1107,7 +1074,7 @@ td:has(> div.ats-building-icon) {
     margin: 0 2px 0 2px;
 }
 
-@media only screen and (max-width: 767px) {
+@container page (max-width: 747px) {
     .ats-table-recipe .ats-building-icon img, .ats-table-recipe .ats-single-ingredient-icon img, .icon-row .ats-single-ingredient-icon img, .ats-table-recipe .ats-product-icon img {
         border-image-slice: 5;
     }
@@ -1162,20 +1129,10 @@ td:has(> div.ats-building-icon) {
     flex-wrap: wrap;
 }
 
-/*
- * Upper half (Ingredient Grid and Species Needs) sizing. Both panels set the same named sizes;
- * the rules below only use the names. Steps, widest first (window widths, allowing for a
- * desktop scrollbar):
- *   desktop      (default)            side by side, which needs about 1470px
- *   step 1       (max-width: 1479px)  panel padding tightens
- *   step 2       (max-width: 1459px)  icon spacing tightens: side by side down to about 1160px
- *   step 3       (max-width: 1259px)  the recipe hint drops
- *   step 4       (max-width: 1159px)  the panels stack (UPPER_STACK_QUERY in index.html)
- *   step 5       (max-width: 645px)   icons shrink to about 44px per cell; 40px below 360px
- *   step 6       (narrower)           the Ingredient Grid wraps to fewer columns by itself
- * Species Needs keeps all 7 columns down to 320px. --columns (its longest row) is set by
- * NEEDS_GRID_COLUMNS in index.html; the Ingredient Grid's 8 columns by --ig-columns.
- */
+/* Upper half (Ingredient Grid and Species Needs) sizing: both panels use these sizes, and the
+   steps below tighten them as the frame narrows. The page's frame-width steps are the phone
+   window width less 20px, but the three widest here (1358, 1338, 1185px) are for a desktop
+   window: less Firefox's 17px scrollbar and the wider side margins. */
 .needs-grid,
 .ingredient-grid {
     --icon-size: 50px;
@@ -1197,14 +1154,14 @@ td:has(> div.ats-building-icon) {
     --icon-cell: calc(var(--icon-size) + 4px + 2 * var(--icon-padding) + 2 * var(--icon-gap));
 }
 
-@media only screen and (max-width: 1479px) {
+@container page (max-width: 1358px) {
     .needs-grid,
     .ingredient-grid {
         --panel-padding: 6px;
     }
 }
 
-@media only screen and (max-width: 1459px) {
+@container page (max-width: 1338px) {
     .needs-grid,
     .ingredient-grid {
         --icon-padding: 6px;
@@ -1212,13 +1169,13 @@ td:has(> div.ats-building-icon) {
     }
 }
 
-@media only screen and (max-width: 1259px) {
+@container page (max-width: 1185px) {
     .ingredient-grid .grid-legend {
         display: none;
     }
 }
 
-@media only screen and (max-width: 645px) {
+@container page (max-width: 625px) {
     .needs-grid,
     .ingredient-grid {
         --icon-size: 30px;
@@ -1227,14 +1184,14 @@ td:has(> div.ats-building-icon) {
     }
 }
 
-@media only screen and (max-width: 359px) {
+@container page (max-width: 339px) {
     .needs-grid,
     .ingredient-grid {
         --icon-size: 28px;
         --icon-gap: 1px;
     }
 
-    /* The panels' outer margins give up their room too, so 7 cells of 40px fit a 320px screen */
+    /* The panels' outer margins give up their room too */
     #block_1 .container-block-item {
         margin: 10px 4px;
     }
@@ -1299,14 +1256,14 @@ div.overlap-grid.ats-container {
 	max-width: 800px;
 }
 
-/* Desktop keeps the earlier 740px minimum, giving way just before it would overflow the page */
-@media only screen and (min-width: 768px) {
+/* Desktop keeps a 740px minimum, giving way before it would overflow the page */
+@container page (min-width: 748px) {
 	div.overlap-grid.ats-container {
 		min-width: min(740px, 100vw - 50px);
 	}
 }
 
-@media only screen and (max-width: 767px) {    /* phone: fits a 360px screen */
+@container page (max-width: 747px) {    /* phone: fits a 360px screen */
 	div.overlap-grid.ats-container {
 		padding: 0 6px;
 	}
@@ -1320,15 +1277,14 @@ div.overlap-grid.ats-container {
 		padding-right: 6px;
 	}
 
-	/* The icon frame normally sits 7px outside the image, more room than these small cells
-	   leave, so frames drew over the next row and column. Here it is 2px, inside the gap. */
+	/* A 2px frame, inside the gap between these small cells */
 	.overlap-grid .icon-row .ats-single-ingredient-icon img {
 		border-image-width: 2px;
 		border-image-outset: 2px;
 	}
 }
 
-@media only screen and (max-width: 359px) {    /* narrow phone: fits a 320px screen */
+@container page (max-width: 339px) {    /* narrow phone: fits a 320px screen */
 	.overlap-grid .icon {
 		padding: 1px;
 	}
@@ -1381,7 +1337,7 @@ div.overlap-grid.ats-container {
     object-fit: contain;
 }
 
-@media only screen and (max-width: 767px) {
+@container page (max-width: 747px) {
     .icon {
         padding: 5px;
     }
@@ -1492,9 +1448,8 @@ div.overlap-grid.ats-container {
 	border-radius: 3px;
 }
 
-/* The same tooltip also names the Suggestor's ingredient chips (.hover-tip), and, as a real element
-   so it can hold icons, explains their status badges (.chip-badge-tip).
-   It shows as soon as the pointer arrives, unlike a title attribute's long browser delay. */
+/* The same tooltip names the Suggestor's ingredient chips and, as a real element, explains their
+   status badges */
 .sacred-grove-warning::after,
 .hover-tip::after,
 .chip-badge-tip {
@@ -1540,9 +1495,8 @@ div.overlap-grid.ats-container {
 	visibility: visible;
 }
 
-/* On phones a hidden tooltip takes no space, so one near the right edge doesn't widen the page.
-   (Desktop keeps them in place, hidden, so they can fade in.) */
-@media only screen and (max-width: 767px) {
+/* On phones a hidden tooltip takes no space, so it can't widen the page */
+@container page (max-width: 747px) {
 	.sacred-grove-warning:not(:hover):not(:focus)::after,
 	.hover-tip:not(:hover):not(:focus-visible)::after,
 	.chip-badge:not(:hover):not(:focus-visible) > .chip-badge-tip {
@@ -1565,8 +1519,7 @@ div.overlap-grid.ats-container {
 	border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 1px;
 }
 
-/* Raise the hovered chip (with its badge) or badge so its tooltip sits above the chips and
-   branches around it */
+/* Raise the hovered chip or badge so its tooltip sits above its neighbours */
 .ingredient-slot:hover,
 .ingredient-slot:focus-within,
 .chip-badge:hover,
@@ -1687,8 +1640,7 @@ input:checked + .slider:before {
     z-index: 1;
     width: 250px;
     bottom: 130%;
-    /* The switch sits at the right end of the Ingredient Grid's header, so the tooltip opens
-       leftwards; centred, half of it hung past the page edge and made the page scroll sideways */
+    /* The switch sits at the header's right end, so its tooltip opens leftwards */
     right: 0;
 }
 
@@ -1772,8 +1724,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 	border-left: 1px solid var(--ats-color-brown-divider);
 }
 
-/* A tree chip and its corner badge: the badge is a sibling so it isn't inside a chip that acts as
-   a button. (Not .ingredient-chip: that's the Ingredient Grid's selected-ingredient chip.) */
+/* A tree chip and its badge sit side by side, so the badge isn't inside a chip that acts as a button */
 .ingredient-slot {
 	position: relative;
 	display: inline-flex;
@@ -1894,8 +1845,8 @@ table.data-table tr.suggestor-row-dimmed td img {
 	background-color: rgba(226, 205, 157, 0.12);
 }
 
-/* A made good that isn't ready: a small pill on the icon's corner with a hammer (needs a
-   blueprint) and/or a ring (still needs ingredients), explained on hover */
+/* A made good that isn't ready: a corner pill with a hammer (needs a blueprint) and/or a ring
+   (needs ingredients) */
 .look-out-icon {
 	position: relative;
 	display: inline-flex;
@@ -1932,8 +1883,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 	color: #9fd3ff;
 }
 
-/* One row per line of the tooltip, each kept on one line (a five-icon row is wider than the
-   shared tooltip's 260px cap) */
+/* One row per tooltip line, each kept on one line */
 .look-out-badge .chip-badge-tip {
 	flex-direction: column;
 	align-items: flex-start;
@@ -1964,22 +1914,8 @@ table.data-table tr.suggestor-row-dimmed td img {
 	opacity: 0.85;
 }
 
-/*
- * Suggestor panel: a grid of three areas that always fits inside the panel's frame:
- * raw resources | table | blueprints, with the table taking the spare width.
- * Steps go by the frame's own width (a container query on div.content), not the window's, so the
- * page's side margins shrink first. Narrowest first to give way:
- *   step 1  (frame below 1200px)  panel padding and gaps tighten
- *   step 2  (below 1010px)        list names drop: each list becomes a grid of tickable icons
- *   (below 900px, not a visible step: the lists narrow to two icons a row and the table's
- *                                 columns follow their content)
- *   step 3  (below 830px)         the "One of" / "Recipes for" labels drop (the tinted chip
- *                                 groups the options; the hammer badge marks blueprints)
- *   step 4  (below 650px)         the lists narrow to one icon a row and their headings drop
- *   step 5  (below 460px)         phones: the lists move above the table as four always-open
- *                                 sections, and the rows become cards
- * Down to step 5 the lists stay put, side by side with the table.
- */
+/* Suggestor panel: raw resources | table | blueprints. The steps below go by the frame's width;
+   below 460px the lists move above the table and the rows become cards. */
 .suggestor-main.ats-container {
 	display: grid;
 	/* Each list fits its longest label on one line ("Clearance Water", "Crystalized Dew") */
@@ -2010,20 +1946,9 @@ table.data-table tr.suggestor-row-dimmed td img {
 	padding: 8px 0;
 }
 
-/* The lists' headings: "Raw resources" / "Have Blueprints", or one word in step 2's narrower
-   lists, so they stay on one line in the heading band */
+/* The lists' headings shorten to one word when the lists narrow */
 .suggestor-side-short {
 	display: none;
-}
-
-@container page (max-width: 1009px) {
-	.suggestor-side-long {
-		display: none;
-	}
-
-	.suggestor-side-short {
-		display: inline;
-	}
 }
 
 @container page (max-width: 1199px) {
@@ -2036,6 +1961,14 @@ table.data-table tr.suggestor-row-dimmed td img {
 @container page (max-width: 1009px) {
 	.suggestor-main.ats-container {
 		grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) minmax(96px, 150px);
+	}
+
+	.suggestor-side-long {
+		display: none;
+	}
+
+	.suggestor-side-short {
+		display: inline;
 	}
 
 	.suggestor-list {
@@ -2074,9 +2007,8 @@ table.data-table tr.suggestor-row-dimmed td img {
 	}
 }
 
-/* Where :has() works (not Firefox before 121), the icon dims until ticked and a ticked one gets
-   a gold edge in place of the checkbox, which stays in place for keyboards and screen readers,
-   just not drawn */
+/* Where :has() works, unticked icons dim and a ticked one gets a gold edge; the checkbox stays
+   for keyboards and screen readers, just not drawn */
 @container page (max-width: 1009px) {
 	@supports selector(:has(*)) {
 		.suggestor-raw-resource input[type="checkbox"] {
@@ -2104,8 +2036,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 	}
 }
 
-/* Between steps 2 and 3, no visible step: the lists narrow to two icons a row, and the table's
-   columns follow their content instead of fixed shares, so it fits a narrower space */
+/* The lists narrow to two icons a row, and the table's columns follow their content */
 @container page (max-width: 899px) {
 	.suggestor-main.ats-container {
 		grid-template-columns: 96px minmax(0, 1fr) 96px;
@@ -2131,9 +2062,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 	}
 }
 
-/* Step 4: the lists narrow to one icon a row, so the table keeps the room it needs. Their
-   headings drop (left is always raw resources, right blueprints), and the subheadings inside
-   a list ("Transitional") become plain dividers. */
+/* The lists narrow to one icon a row, their headings drop, and the group headings become dividers */
 @container page (max-width: 649px) {
 	.suggestor-main.ats-container {
 		grid-template-columns: 44px minmax(0, 1fr) 44px;
@@ -2145,8 +2074,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 		display: none;
 	}
 
-	/* Both lists start level with the table's column titles: the "Suggested Need" heading takes a
-	   row of its own across the panel, and the lists start in the row below, as the table does */
+	/* The lists start level with the table's column titles: the heading gets a row of its own */
 	.suggestor-main.ats-container {
 		grid-template-areas: ". head ." "raw need have";
 	}
@@ -2164,8 +2092,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 		min-width: 0;
 	}
 
-	/* ...then step down past the table's own top spacing (its 4px margin, the data table's 10px
-	   padding and the 8px row spacing) to the column titles */
+	/* ...and skip the table's top margin, padding and row spacing */
 	.suggestor-list {
 		grid-template-columns: 44px;
 		padding-top: calc(4px + 10px + 8px);
@@ -2184,20 +2111,15 @@ table.data-table tr.suggestor-row-dimmed td img {
 	}
 }
 
-/* Phone-only parts, hidden until step 5: the Raw resources section heading, the ticked counts
-   and the per-slot card entries */
+/* Phone-only parts, hidden until the cards below */
 .suggestor-subheading-raw,
 .suggestor-section-count,
 .slot-entries {
 	display: none;
 }
 
-/* Step 5 (below 460px, where the table no longer fits beside the lists): the lists move above
-   the table as four equal sections (Raw resources, Transitional, Needed goods, Service
-   Buildings), always open, each under a one-line heading with how many are ticked. Each icon
-   fills its square, seven or more a row. The rows become cards: the need's icon and name with
-   who needs it at the right, then one entry per recipe slot (SlotEntries in index.html) in place
-   of the ingredient chips and the Look out for lines. */
+/* Phones: the lists sit above the table as four always-open sections with their ticked counts,
+   and each row becomes a card with one entry per recipe slot (SlotEntries in index.html) */
 @container page (max-width: 459px) {
 	.suggestor-main.ats-container {
 		grid-template-columns: minmax(0, 1fr);
@@ -2221,7 +2143,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 		padding: 0 0 4px;
 	}
 
-	/* Section headings: the dividers of step 4 get their names back, plus the count */
+	/* Section headings: the narrow lists' dividers get their names back, plus the count */
 	.suggestor-list .suggestor-subheading,
 	.suggestor-list .suggestor-subheading:first-child {
 		display: flex;
@@ -2307,8 +2229,7 @@ table.data-table tr.suggestor-row-dimmed td img {
 		margin: 0;
 	}
 
-	/* A cell drawn as display: contents can't be faded, so a dimmed card fades its icon and name
-	   here instead (the same as the other cells) */
+	/* A display: contents cell can't be faded, so a dimmed card fades its icon and name here */
 	table.data-table tr.suggestor-row-dimmed .item-cell {
 		opacity: 0.5;
 	}
@@ -2379,38 +2300,6 @@ table.data-table tr.suggestor-row-dimmed td img {
 		width: 12px;
 		height: 12px;
 		font-size: 7px;
-	}
-}
-
-/* Browsers without container queries (Safari before 16, Firefox before 110) get none of the steps
-   above. They keep the earlier layout instead: below a 1210px window (where the three columns
-   with named lists stop fitting), the two lists sit above the table, keeping their names. */
-@supports not (container-type: inline-size) {
-	@media only screen and (max-width: 1209px) {
-		.suggestor-main.ats-container {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-			grid-template-areas:
-				"raw have"
-				"need need";
-			row-gap: 6px;
-			column-gap: 10px;
-			padding: 0 8px 12px;
-		}
-
-		.suggestor-list {
-			display: grid;
-			grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-			column-gap: 10px;
-		}
-
-		.suggestor-list .suggestor-subheading {
-			grid-column: 1 / -1;
-		}
-
-		.suggestor-suggested-need > .grid-header {
-			border-top: 1px solid var(--ats-color-brown-divider);
-			padding-top: 8px;
-		}
 	}
 }
 
@@ -2485,42 +2374,27 @@ button.state-reset:hover {
 	border-color: var(--ats-gold);
 }
 
-/*
- * Buildings and Best Buildings tables at narrow widths. Steps, widest first (window widths);
- * the columns and their order never change:
- *   frame padding tightens   Buildings below 880px, Best Buildings below 1020px
- *   (Buildings) the Resource Gathering / Food Production buttons shorten, below 860px
- *   (Best Buildings) the Haunted Ruins toggle wraps under the species, below about 640px
- *   below 760px              the fixed column widths give way to widths that follow the content
- *   below 680px              cost names drop: amount and icon
- *   below 620px              product names drop: icon and stars (and, in Best Buildings, who
- *                            needs it)
- *   below 520px              the long building names ("Leatherworker") no longer fit beside
- *                            the products, and both tables turn into cards (below)
- * Below 768px the side margins are a fixed 8px, so the window width tells the frame width
- * (less a desktop scrollbar, which the widths above allow for).
- */
-@media only screen and (max-width: 1019px) {
+/* Buildings and Best Buildings tables at narrow widths: names drop, then the rows become cards */
+@container page (max-width: 999px) {
 	div.best-buildings.ats-container {
 		padding: 0 4px;
 	}
 }
 
-@media only screen and (max-width: 879px) {
+@container page (max-width: 859px) {
 	div.buildings-panel.ats-container {
 		padding: 0 4px;
 	}
 }
 
-/* Before the category buttons wrap onto a second line (about 850px), "Resource Gathering" and
-   "Food Production" shorten to "Gathering" and "Food", like the other categories' buttons */
-@media only screen and (max-width: 859px) {
+/* "Resource Gathering" and "Food Production" shorten before the category buttons wrap */
+@container page (max-width: 839px) {
 	.cat-label-extra {
 		display: none;
 	}
 }
 
-@media only screen and (max-width: 759px) {
+@container page (max-width: 739px) {
 	table.buildings-table {
 		table-layout: auto;
 	}
@@ -2530,7 +2404,7 @@ button.state-reset:hover {
 	}
 }
 
-@media only screen and (max-width: 679px) {
+@container page (max-width: 659px) {
 	.buildings-table td:nth-child(3) .good-name {
 		display: none;
 	}
@@ -2540,8 +2414,7 @@ button.state-reset:hover {
 		display: none;
 	}
 
-	/* On its own line now: as compact as the Buildings table's Products / Costs filter buttons,
-	   so it doesn't outsize the text around it */
+	/* As compact as the Buildings table's filter buttons */
 	button.ruins-toggle {
 		margin-left: 0;
 		font-size: 11pt;
@@ -2549,36 +2422,9 @@ button.state-reset:hover {
 	}
 }
 
-/* Best Buildings' species keep to one line: first the "Species:" label drops (the portraits are
-   the Species Needs grid's), then below about 390px the portraits shrink from 46px to 36px */
-@media only screen and (max-width: 454px) {
-	/* Hidden from view only: screen readers still announce "Species:" before the portraits */
-	.affinity-label {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
-	}
-}
-
-@media only screen and (max-width: 389px) {
-	.affinity-picker .affinity-portrait {
-		width: 32px;
-		height: 32px;
-	}
-}
-
-@media only screen and (max-width: 619px) {
+@container page (max-width: 599px) {
 	.buildings-table td:nth-child(2) .good-name {
 		display: none;
-	}
-}
-
-@media only screen and (max-width: 599px) {
-	.buildings-panel .icon-grid-wrapper {
-		overflow-x: auto;
 	}
 }
 
@@ -2587,18 +2433,9 @@ button.state-reset:hover {
 	display: none;
 }
 
-/*
- * Buildings and Best Buildings cards, below 520px (where the Buildings table no longer fits even
- * with every name dropped; Best Buildings would still fit by wrapping its long names, but turns
- * at the same width so both tabs look alike). Each row becomes a card: the building's icon and
- * name across the top, then its products, a divider, and its costs pushed to the right edge.
- * The goods are 38 x 40px tap targets: each product's rating sits in a pill centered on its top
- * edge (three slots, hollow for the missing stars), each cost's amount in its top-right corner.
- * 7 goods (the most any building has) fit a 320px screen. The header stays a row, its Costs
- * filter over the costs. Best Buildings adds its score on the icon's corner, the worker bonuses
- * under the name, and who needs each product as small portraits under it, two to a row.
- */
-@media only screen and (max-width: 519px) {
+/* Buildings and Best Buildings cards: icon and name on top, then the products and, past a divider,
+   the costs. Each good is one tap target, with its stars or amount as a corner badge. */
+@container page (max-width: 499px) {
 	table.buildings-table,
 	.buildings-table thead,
 	.buildings-table tbody {
@@ -2663,7 +2500,7 @@ button.state-reset:hover {
 		margin: 0 8px 0 0;
 	}
 
-	/* Slightly tighter, so the longest name (Advanced Rain Collector) stays on one line at 320px */
+	/* Slightly tighter, so the longest building name stays on one line */
 	.buildings-table .building-name {
 		letter-spacing: 0.06em;
 	}
@@ -2759,16 +2596,14 @@ button.state-reset:hover {
 		border: 2px ridge var(--ats-brown);
 	}
 
-	/* Best Buildings' column titles are plain labels (unlike the Buildings filters), and a card
-	   shows what each part is, so they drop */
+	/* A card shows what each part is, so Best Buildings' column titles drop */
 	.best-table thead {
 		display: none;
 	}
 
-	/* The table-only portrait rules above are scoped to min-width: 520px to match this block */
+	/* The table-only portrait rules above are scoped to match this block */
 
-	/* Best Buildings: products and costs line up along their tops, since portraits hang under
-	   some products */
+	/* Products and costs line up along their tops, since portraits hang under some products */
 	.best-table tbody td:nth-child(2),
 	.best-table tbody td:nth-child(3) {
 		align-items: flex-start;
@@ -2867,5 +2702,26 @@ button.state-reset:hover {
 		border-image: none;
 		border-radius: 3px;
 		box-shadow: 0 0 0 1px rgba(226, 205, 157, 0.55);
+	}
+}
+
+/* The species pickers (Best Buildings, Suggestor) keep to one line: the label drops, then the
+   portraits shrink */
+@container page (max-width: 434px) {
+	/* Hidden from view only: screen readers still announce "Species:" before the portraits */
+	.affinity-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+}
+
+@container page (max-width: 369px) {
+	.affinity-picker .affinity-portrait {
+		width: 32px;
+		height: 32px;
 	}
 }

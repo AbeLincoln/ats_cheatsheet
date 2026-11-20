@@ -6,8 +6,28 @@
     <title>Against the Storm Cheatsheet</title>
     <link rel="icon" href="img/ats.ico"/>
 	<link rel="stylesheet" href="css/style.css?v=july-2026">
+    <script>
+        // Browsers without container queries (Safari before 16, Firefox before 110) get the stylesheet's
+        // @container page steps as window-width steps instead: on a phone the page frame is 20px narrower
+        // than the window
+        window.addContainerFallback = function (force) {
+            if (!force && window.CSS && CSS.supports('container-type', 'inline-size')) return;
+            var link = document.querySelector('link[href^="css/style.css"]');
+            fetch(link.getAttribute('href')).then(function (response) { return response.text(); }).then(function (css) {
+                // The whole stylesheet, so every rule keeps its place in the cascade
+                var style = document.createElement('style');
+                style.textContent = css
+                    .replace(/@container page \((max|min)-width: (\d+)px\)/g,
+                        function (match, side, width) { return '@media only screen and (' + side + '-width: ' + (+width + 20) + 'px)'; })
+                    .replace(/url\(\.\.\//g, 'url(');  // image paths, now relative to the page
+                link.parentNode.insertBefore(style, link.nextSibling);
+                link.disabled = true;
+            });
+        };
+        window.addContainerFallback();
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <!-- "nest" draws each icon's <svg> inside its <i> instead of replacing the <i>; React owns those <i> elements and crashes removing one that was swapped out. The icon classes move onto the <svg>, so style icons by class, not as an <i>. -->
+    <!-- "nest" draws each <svg> inside its <i>, which React can still remove; the icon classes move onto the <svg>, so style icons by class -->
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" data-auto-replace-svg="nest"></script>
     <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
@@ -34,7 +54,7 @@
 
         <!-- React code -->
         <script type="text/babel">
-            const { useState, useEffect, useRef } = React;
+            const { useState, useEffect, useLayoutEffect, useRef } = React;
 			const { DragDropContext, Droppable, Draggable } = ReactBeautifulDnd;
 			const SAVED_STATE_KEY = 'ats-cheatsheet:v1';
 
@@ -50,19 +70,31 @@
 				}, [eventName]);
 			};
 
-			// Whether the page frame (div.content, the "page" container the stylesheet's container
-			// queries measure) is narrower than `width`, for parts only one layout draws. `ref` is any
-			// element inside the frame. Without ResizeObserver it answers true, so nothing goes missing
-			// (the stylesheet still hides what doesn't apply).
-			const usePageNarrowerThan = (ref, width) => {
+			// Selects a good or species in the upper half by clicking its icon. A service need
+			// (Religion) selects the good that meets it; a name with no icon does nothing.
+			const selectInGrid = (name) => {
+				if (name === "None") return;
+				const icon = document.getElementById(NEEDTRANS[name] || name);
+				if (icon) icon.click();
+			};
+
+			// Whether the page frame (div.content, which the stylesheet's container queries measure) is
+			// narrower than `width`, measured before the first paint and kept up to date
+			const usePageNarrowerThan = (width) => {
 				const [narrower, setNarrower] = useState(false);
-				useEffect(() => {
-					const page = ref.current && ref.current.closest('div.content');
-					if (!page || typeof ResizeObserver === 'undefined') {
-						setNarrower(true);
-						return undefined;
+				useLayoutEffect(() => {
+					const page = document.querySelector('div.content');
+					if (!page) return undefined;
+					const measure = () => {
+						const style = getComputedStyle(page);
+						setNarrower(page.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) < width);
+					};
+					measure();
+					if (typeof ResizeObserver === 'undefined') {
+						window.addEventListener('resize', measure);
+						return () => window.removeEventListener('resize', measure);
 					}
-					const observer = new ResizeObserver(entries => setNarrower(entries[0].contentRect.width < width));
+					const observer = new ResizeObserver(measure);
 					observer.observe(page);
 					return () => observer.disconnect();
 				}, [width]);
@@ -301,6 +333,25 @@
                     </span>
                 );
             };
+            // A product in the Buildings tables: icon, name and grade, the whole line selecting it in the
+            // grid. `children` follow the grade (Best Buildings adds who needs it); `unwanted` dims it.
+            const ProductLine = ({ product, unwanted = false, children }) => (
+                <div className={`good-line${unwanted ? ' unwanted' : ''}`} onClick={() => selectInGrid(product.name)}>
+                    <img alt={product.name} src={product.icon_path} width="30" height="30"/>
+                    {product.grade && <GradeBadge grade={product.grade} />}
+                    <span className="good-name"> {product.name}</span>
+                    {product.grade && <span className="grade" role="img" aria-label={gradeLabel(product.grade)}>{product.grade}</span>}
+                    {children}
+                </div>
+            );
+            // A building cost: amount, icon and name, the whole line selecting the good in the grid
+            const CostLine = ({ cost }) => (
+                <div className="good-line" onClick={() => selectInGrid(cost.name)}>
+                    <span className="good-amount">{cost.amount}</span>
+                    <img alt={cost.name} src={cost.icon_path} width="30" height="30"/>
+                    <span className="good-name"> {cost.name}</span>
+                </div>
+            );
             const BUILDING_ORDER = [
                 "Woodcutters' Camp", "Stonecutters' Camp", "Harvesters' Camp", "Small Foragers' Camp", "Foragers' Camp",
                 "Small Herbalists' Camp", "Herbalists' Camp", "Small Trappers' Camp", "Trappers' Camp", 'Small Fishing Hut',
@@ -696,13 +747,6 @@
 					}
 				};
 				
-                // Services (Religion, Brawling...) select the good that meets them; goods with no
-                // Ingredient Grid icon do nothing
-                const handleIconClick = (iconName) => {
-                    const icon = document.getElementById(NEEDTRANS[iconName] || iconName);
-                    if (icon) icon.click();
-                };
-
 				const sortedData = [...data].sort((a, b) => {
 					if (sortKey === 'category') return compareWikiOrder(a, b);
 					const byName = a.building.localeCompare(b.building);
@@ -792,7 +836,7 @@
 								<span className="ingredient-chip">
 									<img src={GOODS[activeIngredient].icon_path} alt="" />
 									<span className="ingredient-chip-name">{activeIngredient}</span>
-									<button type="button" className="ingredient-chip-clear" onClick={() => handleIconClick(activeIngredient)}
+									<button type="button" className="ingredient-chip-clear" onClick={() => selectInGrid(activeIngredient)}
 										title={`Stop filtering by ${activeIngredient}`} aria-label={`Stop filtering by ${activeIngredient}`}>✕</button>
 								</span>
 							</div>
@@ -800,7 +844,7 @@
 							<div className="filter-chip-row"><input type="text" placeholder="Search" id="SearchInput" value={searchTerm} onChange={handleSearch} /></div>
 							}
 							<div className="button-row">
-							<button onClick={() => handleFilter("all")} id="AllButton" className={allCatsActive ? "cat-active" : "cat-inactive"}>All</button>
+							<button onClick={() => handleFilter("all")} className={allCatsActive ? "cat-active" : "cat-inactive"}>All</button>
 							<span className="button-divider" aria-hidden="true"></span>
 							{/* With everything shown, only "All" is highlighted: clicking a category then shows just that one */}
 							{Object.keys(per_cat).map((catItem, catIndex) => (
@@ -845,12 +889,12 @@
 											</td>
 											<td>
 												{item.products.map((productItem, productIndex) => (
-												  <div key={productIndex} className="good-line" onClick={() => handleIconClick(productItem.name)}><img alt={productItem.name} src={productItem.icon_path} width="30" height="30"/><span className="good-name"> {productItem.name}</span>{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}{productItem.grade && <GradeBadge grade={productItem.grade} />}</div>
+												  <ProductLine key={productIndex} product={productItem} />
 												))}
 											</td>
 											<td>
 												{item.cost.map((costItem, costIndex) => (
-												  <div key={costIndex} className="good-line" onClick={() => handleIconClick(costItem.name)}><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} src={costItem.icon_path} width="30" height="30"/><span className="good-name"> {costItem.name}</span></div>
+												  <CostLine key={costIndex} cost={costItem} />
 												))}
 											</td>
 										</tr>
@@ -862,9 +906,6 @@
 					</div>
 				);
 			};
-
-			// Window widths at which the Ingredient Grid and Species Needs panels stack (see style.css)
-			const UPPER_STACK_QUERY = '(max-width: 1159px)';
 
 			// Drag and drop
 			const DraggableContainer = () => {
@@ -882,23 +923,9 @@
 					];
 				});
 
-				const [direction, setDirection] = useState("horizontal");
-
-				// The two panels stack once they no longer fit side by side, even with tightened spacing.
-				// Keep in step with the upper-half sizing in style.css (UPPER_STACK_QUERY).
-				useEffect(() => {
-					const query = window.matchMedia(UPPER_STACK_QUERY);
-					const updateDirection = () => setDirection(query.matches ? "vertical" : "horizontal");
-
-					updateDirection(); // Set initial value
-					// Safari before 14 only has the older addListener / removeListener
-					if (query.addEventListener) {
-						query.addEventListener("change", updateDirection);
-						return () => query.removeEventListener("change", updateDirection);
-					}
-					query.addListener(updateDirection);
-					return () => query.removeListener(updateDirection);
-				}, []);
+				// The two panels stack below a 1123px frame: a 1160px desktop window less Firefox's 17px
+				// scrollbar and the side margins, as the upper-half sizing in style.css expects
+				const direction = usePageNarrowerThan(1123) ? "vertical" : "horizontal";
 
 				const onDragEnd = (result) => {
 					if (!result.destination) return; // If dropped outside the list, do nothing
@@ -989,12 +1016,6 @@
 			
             // Overlapping Needs
             const OverlappingNeeds = () => {
-                const handleIconClick = (iconName) => {
-					if (iconName == "None") return;
-					if (iconName in NEEDTRANS) iconName = NEEDTRANS[iconName];
-					document.getElementById(iconName).click();
-                };
-
 				// Dim like the Species Needs grid: species not selected, and needs none of the selected species have
 				const [selectedSpecies, setSelectedSpecies] = useState(window.currentSpeciesSelection || []);
 				useWindowEvent('speciesSelection', (e) => setSelectedSpecies(e.detail || []));
@@ -1026,7 +1047,7 @@
 							<div
 							key={iconName}
 							className={iconClass(iconName, iconIndex)}
-							onClick={() => handleIconClick(iconName)}
+							onClick={() => selectInGrid(iconName)}
 							>
 								<img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
 							</div>
@@ -1041,7 +1062,7 @@
 							<div
 							  key={iconIndex}
 							  className={iconClass(iconName, iconIndex)}
-							  onClick={() => handleIconClick(iconName)}
+							  onClick={() => selectInGrid(iconName)}
 							>
 							  <img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
 							</div>
@@ -1069,6 +1090,8 @@
 
 			const INGREDIENT_GROUP_COLORS = ['#1e90ff', '#eb4d4b', '#f1f2f6'];
 			const INGREDIENT_GROUP_COLORS_ALPHA = ['#1e90ff66', '#eb4d4b66', '#f1f2f699'];
+			// Lighter tints for chips inside a branch, so a sub-recipe reads as part of its top-level slot
+			const INGREDIENT_GROUP_COLORS_NESTED = ['#1e90ff2e', '#eb4d4b2e', '#f1f2f633'];
 			const INGREDIENT_GROUP_NAMES = ['blue', 'red', 'gray'];
 
 			const isRawResource = (name) => RAW_RESOURCES.includes(name);
@@ -1196,12 +1219,8 @@
 						suggestions.push({ type: 'blueprint', goods, colorAlpha: INGREDIENT_GROUP_COLORS_ALPHA[i] || INGREDIENT_GROUP_COLORS_ALPHA[0] });
 					}
 				});
-				// A slot that can't be covered: every option in it is a way to cover it (Brawling's red
-				// slot: Stone, Copper Bars or Crystalized Dew), raw or made. No trader lines: a trader
-				// can sell any of them, so naming only some would suggest the others can't be bought.
-				// A slot whose only option is made (Flour) shows that good's own uncovered slots instead,
-				// the way a service need shows its product's ingredients, in the faded colour of the
-				// slot under that good's chip.
+				// A slot that can't be covered lists all its options (a trader can sell any of them). A slot whose
+				// only option is made (Flour) lists that good's own uncovered slots instead, in the paler tint.
 				const addSlotLines = (group, colorAlpha, nestedAlpha, seen) => {
 					if (getFirstAvailableInGroup(group, rawSet)) return;
 					const only = group.length === 1 ? group[0] : null;
@@ -1250,12 +1269,8 @@
 				});
 			};
 
-			// Lighter tints for chips inside a branch, so a sub-recipe reads as part of its top-level slot
-			const INGREDIENT_GROUP_COLORS_NESTED = ['#1e90ff2e', '#eb4d4b2e', '#f1f2f633'];
-
-			// The option the tree uses to cover a slot, out of those the ticked raw resources can make:
-			// a ticked raw resource first, then the one needing the fewest recipe buildings that
-			// aren't ticked; ties keep the recipe's own order. Null when nothing in the slot can be made.
+			// The option the tree uses for a slot: a ticked raw resource first, else the one needing the fewest
+			// missing recipe buildings. Null when nothing in the slot can be made.
 			const pickSlotIngredient = (group, rawSet, hasRecipeBuilding, visited = new Set()) => {
 				const options = group.filter(ing => !visited.has(ing) && isIngredientAvailable(ing, rawSet));
 				const raw = options.find(ing => isRawResource(ing));
@@ -1291,10 +1306,8 @@
 			const countMissingBuildings = (goodName, rawSet, hasRecipeBuilding, visited = new Set()) =>
 				getBlueprintGoods(goodName, rawSet, hasRecipeBuilding, visited).length;
 
-			// The same goods as getBlueprintGoods, split by why they're needed. "required": the good
-			// itself and anything reached only through slots with a single option (Flour for Pie),
-			// so needed whatever you pick. "bySlot[i]": the rest, under the top-level slot whose
-			// chosen option needs them (Coats: Fabric under blue; Dye and Coal under red).
+			// getBlueprintGoods split by why each is needed: "required" whatever you pick, "bySlot[i]" for the
+			// option chosen in top-level slot i
 			const getBlueprintGroups = (goodName, rawSet, hasRecipeBuilding) => {
 				const required = [];
 				const bySlot = [];
@@ -1318,12 +1331,8 @@
 				return { required, bySlot };
 			};
 
-			// Badge for a card: a hammer when its good's own recipe building isn't ticked; a check when
-			// every slot is covered, no building anywhere in the tree is missing and, for a service need,
-			// a building that provides the service is ticked; otherwise none (the Look out for lines and
-			// the chips' hammers show what's missing).
-			// Returns { status, goods } for StatusBadge: the hammer lists the good itself; the check lists
-			// the option each slot uses.
+			// The card's badge: a hammer when the good's own recipe building isn't ticked, a check when
+			// everything down the tree (and a service building, if needed) is ticked, otherwise none
 			const getCardStatus = (need, currentRawResources, hasRecipeBuilding, hasServiceBuilding) => {
 				const goodName = NEEDTRANS[need] || need;
 				const good = GOODS[goodName];
@@ -1344,10 +1353,8 @@
 				return isRawResource(ing) || getBlueprintGoods(ing, rawSet, hasRecipeBuilding, visited).length === 0;
 			};
 
-			// A small corner badge that explains itself: `tip` shows on hover or keyboard focus, `label`
-			// is what a screen reader reads, `children` are the glyphs. It only explains, so clicks and
-			// keys stop here (they don't reach the chip or icon under it) and Space or Enter don't
-			// scroll the page.
+			// A small corner badge: `tip` shows on hover or focus, `label` is read aloud. Clicks and keys
+			// stop here, so they don't reach the chip or icon under it.
 			const Badge = ({ className, label, tip, children }) => (
 				<span
 					className={`chip-badge ${className}`}
@@ -1365,12 +1372,8 @@
 				</span>
 			);
 
-			// Corner badge on a chip or card icon, one of two states, with a tooltip of goods icons:
-			//   "done":      fully satisfied, ingredients and every recipe building down the chain (check);
-			//                `goods` are the options that satisfy it
-			//   "blueprint": ingredients covered, but the `goods` in the chain need a blueprint (hammer)
-			// `count` numbers the goods when there are several (a chip's satisfying options, the
-			// blueprints missing); the card's check names one pick per slot, so it isn't counted.
+			// A check ("done": fully satisfied) or a hammer ("blueprint": `goods` need a blueprint), naming the
+			// goods in its tooltip, with a count when there are several
 			const StatusBadge = ({ status, goods, counted = true }) => {
 				if (!status) return null;
 				const shownGoods = goods.filter(g => GOODS[g]);
@@ -1385,9 +1388,7 @@
 							{shownGoods.map(g => <img key={g} src={GOODS[g].icon_path} alt="" />)}
 						</>}
 					>
-						{/* Keyed by state: switching makes a new <i>. Font Awesome has already moved the old one's
-						    classes onto its <svg>; if React put a new class back on it, the stylesheet would draw a
-						    second icon beside the <svg>. */}
+						{/* Keyed by state, so a change of state gets a fresh icon from Font Awesome */}
 						<i key={status} className={`fa-solid ${status === 'done' ? 'fa-check' : 'fa-hammer'}`} aria-hidden="true"></i>
 						{count > 1 && <span className="chip-badge-count">{count}</span>}
 					</Badge>
@@ -1415,10 +1416,8 @@
 				</svg>
 			);
 
-			// A goods icon on a "Look out for" line, with a corner pill when it is made and not ready:
-			// a hammer when no ticked recipe building makes it, a ring when the ticked raw resources
-			// don't cover all its slots (`needs`, one list of options per slot). Hovering the pill lists
-			// both; clicking the icon itself selects the good in the grid.
+			// A goods icon on a Look out for line, with a corner pill when it's made and not ready: a hammer
+			// (needs a blueprint) and/or a ring (`needs`: its uncovered slots)
 			const LookOutIcon = ({ good, hammer = false, needs = [], onClick }) => {
 				const tipGoods = (list) => list.filter(g => GOODS[g]);
 				const names = (list) => tipGoods(list).map(g => GOODS[g].displayName).join(', ');
@@ -1454,11 +1453,31 @@
 				);
 			};
 
-			// Top level: one row of slot chips. A covered chip that is made from a recipe folds its
-			// sub-recipe away (clicking the chip opens it); a slot that can't be covered stays open.
-			// Inside an open branch: an outline, one slot per line, indented under its parent.
-			// A whole branch keeps the colour of its top-level slot.
-			const IngredientTree = ({ goodName, currentRawResources, hasRecipeBuilding, handleIconClick, slotColor = null, visited = new Set() }) => {
+			// A slot's options, each marked when it is made and not ready
+			const OptionIcons = ({ options, currentRawResources, hasRecipeBuilding }) => options.filter(ing => GOODS[ing]).map(ing => (
+				<LookOutIcon key={ing} good={ing} onClick={() => selectInGrid(ing)}
+					hammer={!isRawResource(ing) && !hasRecipeBuilding.includes(ing)}
+					needs={getMissingSlots(ing, currentRawResources)} />
+			));
+
+			// The buildings that provide a service need
+			const ServiceBuildingIcons = ({ need }) => (NEED_TO_SERVICE_BUILDINGS[need] || []).filter(bid => BUILDINGS[bid]).map(bid => (
+				<img key={bid} className="service-building-icon" src={BUILDINGS[bid].icon}
+					alt={BUILDINGS[bid].displayName} title={BUILDINGS[bid].displayName} width="24" height="24" />
+			));
+
+			// The badge for a slot covered by `satisfier`: a check listing every option in the slot that is
+			// fully satisfied, or a hammer listing the blueprints its chain still needs
+			const slotBadge = (group, satisfier, rawSet, hasRecipeBuilding, visited) => {
+				const chain = isRawResource(satisfier) ? [] : getBlueprintGoods(satisfier, rawSet, hasRecipeBuilding, visited);
+				return chain.length === 0
+					? { status: 'done', goods: group.filter(ing => isFullySatisfied(ing, rawSet, hasRecipeBuilding, visited)) }
+					: { status: 'blueprint', goods: chain };
+			};
+
+			// One row of slot chips; a covered chip made from a recipe folds its sub-recipe (click to open).
+			// An open branch is an outline in its top-level slot's colour.
+			const IngredientTree = ({ goodName, currentRawResources, hasRecipeBuilding, slotColor = null, visited = new Set() }) => {
 				const [openSlots, setOpenSlots] = useState([]);
 				const rawSet = new Set(currentRawResources);
 				const good = GOODS[goodName];
@@ -1492,18 +1511,10 @@
 							const foldable = isTop && satisfier && hasSubRecipe;
 							const foldKey = foldKeys[i];
 							const open = hasSubRecipe && (!foldable || openSlots.includes(foldKey));
-							// Badge: a ticked raw resource is done. A made good is done when no building in its
-							// chain is missing; otherwise a hammer. A folded chip lists its whole chain's missing
-							// blueprints; an open one only its own, and shows nothing when only goods below it are
-							// missing (they carry their own hammers). A check lists every option in the slot that
-							// is fully satisfied.
-							const chainBlueprints = satisfier && !isRawResource(satisfier)
-								? getBlueprintGoods(satisfier, rawSet, hasRecipeBuilding, branchVisited) : [];
-							const ownMissing = satisfier && !isRawResource(satisfier) && !hasRecipeBuilding.includes(satisfier);
-							const badge = !satisfier ? null
-								: chainBlueprints.length === 0 ? { status: 'done', goods: group.filter(ing => isFullySatisfied(ing, rawSet, hasRecipeBuilding, branchVisited)) }
-								: !open ? { status: 'blueprint', goods: chainBlueprints }
-								: ownMissing ? { status: 'blueprint', goods: [satisfier] }
+							// An open chip's hammer lists only its own blueprint; the goods below carry theirs
+							const slot = satisfier && slotBadge(group, satisfier, rawSet, hasRecipeBuilding, branchVisited);
+							const badge = !slot || slot.status === 'done' || !open ? slot
+								: !hasRecipeBuilding.includes(satisfier) ? { status: 'blueprint', goods: [satisfier] }
 								: null;
 							const toggle = () => setOpenSlots(prev => prev.includes(foldKey) ? prev.filter(k => k !== foldKey) : [...prev, foldKey]);
 							// A chip that folds opens and closes its sub-recipe; any other chip selects its good in the grid
@@ -1522,7 +1533,7 @@
 											className={`ingredient-group-box${shown && !satisfier ? ' ingredient-missing' : ''}${foldable ? ' ingredient-foldable' : ''}${tooltip ? ' hover-tip' : ''}`}
 											style={{ backgroundColor: palette[colorIndex] || palette[0] }}
 											data-tooltip={tooltip || undefined}
-											onClick={() => foldable ? toggle() : shown && handleIconClick(shown)}
+											onClick={() => foldable ? toggle() : shown && selectInGrid(shown)}
 											{...foldProps}
 										>
 											{shown && GOODS[shown] && (
@@ -1536,7 +1547,6 @@
 											goodName={shown}
 											currentRawResources={currentRawResources}
 											hasRecipeBuilding={hasRecipeBuilding}
-											handleIconClick={handleIconClick}
 											slotColor={colorIndex}
 											visited={branchVisited}
 										/>
@@ -1548,50 +1558,30 @@
 				);
 			};
 
-			// Phone cards (below a 460px frame): one entry per recipe slot, in the slot's colour and the
-			// recipe's order, in place of the ingredient chips and the Look out for lines.
-			//   one icon with a check      ready: the good the slot uses, everything down its chain ticked
-			//   one icon with a hammer     the good the slot uses; the hammer counts the blueprints its chain
-			//                              needs and its tooltip names them (a folded chip does the same)
-			//   several icons              missing ingredients: get any one of them
-			// Service buildings come first, in the neutral tint. Flour (Biscuits, Pie) is the only slot
-			// with a single option; when it can't be made it carries a ring, followed by its own missing
-			// slots in the paler tint.
-			const SlotEntries = ({ need, currentRawResources, hasRecipeBuilding, hasServiceBuilding, handleIconClick }) => {
+			// Phone cards: one entry per recipe slot, in its colour. One icon with a check is ready, one with a
+			// hammer needs the blueprints it counts, and several icons are the options for a missing slot.
+			const SlotEntries = ({ need, currentRawResources, hasRecipeBuilding, hasServiceBuilding }) => {
 				const goodName = NEEDTRANS[need] || need;
 				const good = GOODS[goodName];
 				if (!good || !good.ingredient_sets) return null;
 				const rawSet = new Set(currentRawResources);
 				const visited = new Set([goodName]);
-				const optionIcons = (group) => group.filter(ing => GOODS[ing]).map(ing => (
-					<LookOutIcon key={ing} good={ing} onClick={() => handleIconClick(ing)}
-						hammer={!isRawResource(ing) && !hasRecipeBuilding.includes(ing)}
-						needs={getMissingSlots(ing, currentRawResources)} />
-				));
 				const entries = [];
 				if (isServiceBuildingMissing(need, hasServiceBuilding)) {
 					entries.push(
-						<span key="service" className="look-out-for-group look-out-for-service">
-							{(NEED_TO_SERVICE_BUILDINGS[need] || []).filter(bid => BUILDINGS[bid]).map(bid => (
-								<img key={bid} className="service-building-icon" src={BUILDINGS[bid].icon}
-									alt={BUILDINGS[bid].displayName} title={BUILDINGS[bid].displayName} width="24" height="24" />
-							))}
-						</span>
+						<span key="service" className="look-out-for-group look-out-for-service"><ServiceBuildingIcons need={need} /></span>
 					);
 				}
 				good.ingredient_sets.forEach((group, i) => {
 					const color = INGREDIENT_GROUP_COLORS_ALPHA[i] || INGREDIENT_GROUP_COLORS_ALPHA[0];
 					const satisfier = pickSlotIngredient(group, rawSet, hasRecipeBuilding, visited);
 					if (satisfier) {
-						const chain = isRawResource(satisfier) ? [] : getBlueprintGoods(satisfier, rawSet, hasRecipeBuilding, visited);
-						const status = chain.length === 0 ? 'done' : 'blueprint';
 						entries.push(
 							<span key={i} className="look-out-for-group" style={{ backgroundColor: color }}>
 								<span className="look-out-icon slot-used">
 									<img src={GOODS[satisfier].icon_path} alt={GOODS[satisfier].displayName} title={GOODS[satisfier].displayName}
-										width="24" height="24" onClick={() => handleIconClick(satisfier)} />
-									<StatusBadge status={status}
-										goods={status === 'done' ? group.filter(ing => isFullySatisfied(ing, rawSet, hasRecipeBuilding, visited)) : chain} />
+										width="24" height="24" onClick={() => selectInGrid(satisfier)} />
+									<StatusBadge {...slotBadge(group, satisfier, rawSet, hasRecipeBuilding, visited)} />
 								</span>
 							</span>
 						);
@@ -1603,17 +1593,17 @@
 						const missing = getMissingSlots(only, currentRawResources);
 						entries.push(
 							<span key={i} className="look-out-for-group" style={{ backgroundColor: color }}>
-								<LookOutIcon good={only} onClick={() => handleIconClick(only)}
+								<LookOutIcon good={only} onClick={() => selectInGrid(only)}
 									hammer={!hasRecipeBuilding.includes(only)} needs={missing} />
 								{missing.map((sub, k) => (
-									<span key={k} className="look-out-for-group slot-nested" style={{ backgroundColor: nested }}>{optionIcons(sub)}</span>
+									<span key={k} className="look-out-for-group slot-nested" style={{ backgroundColor: nested }}><OptionIcons options={sub} currentRawResources={currentRawResources} hasRecipeBuilding={hasRecipeBuilding} /></span>
 								))}
 							</span>
 						);
 						return;
 					}
 					entries.push(
-						<span key={i} className="look-out-for-group" style={{ backgroundColor: color }}>{optionIcons(group)}</span>
+						<span key={i} className="look-out-for-group" style={{ backgroundColor: color }}><OptionIcons options={group} currentRawResources={currentRawResources} hasRecipeBuilding={hasRecipeBuilding} /></span>
 					);
 				});
 				return <div className="slot-entries">{entries}</div>;
@@ -1629,7 +1619,7 @@
 			);
 
 			const SuggestorContent = () => {
-				const savedSuggestorState = loadSavedState();
+				const [savedSuggestorState] = useState(loadSavedState); // read once, for the initial values
 				const speciesNames = Object.keys(SPECIES);
 				const recipeBuildingGoods = [...TRANSITIONAL_FOR_NEEDED, ...NEEDED_GOODS];
 				const [currentRawResources, setCurrentRawResources] = useState(Array.isArray(savedSuggestorState.suggestorRawResources)
@@ -1668,16 +1658,6 @@
 					});
 				};
 
-				// Toggle through the Species Needs grid so both stay in sync
-				const handleSpeciesClick = (species) => {
-					const gridIcon = document.getElementById(species);
-					if (gridIcon) gridIcon.click();
-				};
-
-				const handleIconClick = (resource) => {
-					if (document.getElementById(resource)) document.getElementById(resource).click();
-				};
-
 				const isSpeciesLit = (species) => !activeSpecies || activeSpecies.includes(species);
 				const isNeedRowDimmed = (need) => {
 					if (!activeSpecies) return false;
@@ -1685,13 +1665,11 @@
 					return needSpecies.length > 0 && needSpecies.every(s => !activeSpecies.includes(s));
 				};
 
-				// The phone cards' slot entries are only built while the cards show (below a 460px frame,
-				// step 5 in the stylesheet)
-				const suggestorRef = useRef(null);
-				const showCards = usePageNarrowerThan(suggestorRef, 460);
+				// The phone cards' slot entries are only built while the cards show (below a 460px frame)
+				const showCards = usePageNarrowerThan(460);
 
 				return (
-					<div ref={suggestorRef}>
+					<div>
 						<div className="ats-container icon-grid" style={{ maxWidth: '1200px', marginBottom: '15px' }}>
 							<div className="grid-header ats-infobox-header-title">
 								Suggestor
@@ -1704,7 +1682,7 @@
 									{speciesNames.map(species => (
 										<img key={species} src={SPECIES_ICONS[species]} alt={species} title={species}
 											className={`affinity-portrait${activeSpecies && activeSpecies.includes(species) ? ' affinity-active' : ''}`}
-											onClick={() => handleSpeciesClick(species)} />
+											onClick={() => selectInGrid(species)} />
 									))}
 								</div>
 							</div>
@@ -1734,7 +1712,7 @@
 														src={GOODS[resource].icon_path}
 														alt={GOODS[resource].displayName}
 														title={GOODS[resource].displayName}
-														onClick={() => handleIconClick(resource)}
+														onClick={() => selectInGrid(resource)}
 													/>
 												)}
 												<span>{GOODS[resource] ? GOODS[resource].displayName : resource}</span>
@@ -1763,7 +1741,7 @@
 																className="item-icon"
 																src={SPECIES_ICONS[need] || (NEEDTRANS[need] && GOODS[NEEDTRANS[need]] && GOODS[NEEDTRANS[need]].icon_path)}
 																alt={need}
-																onClick={() => handleIconClick(NEEDTRANS[need] || need)}
+																onClick={() => selectInGrid(NEEDTRANS[need] || need)}
 															/>
 															<StatusBadge {...getCardStatus(need, currentRawResources, hasRecipeBuilding, hasServiceBuilding)} />
 															<span className="item-name">{need}</span>
@@ -1772,7 +1750,6 @@
 															goodName={NEEDTRANS[need] || need}
 															currentRawResources={currentRawResources}
 															hasRecipeBuilding={hasRecipeBuilding}
-															handleIconClick={handleIconClick}
 														/>
 													</td>
 													<td>
@@ -1780,7 +1757,7 @@
 														<div className="species-strip">
 															{overlappingNeeds[need] && overlappingNeeds[need].map((species) => (
 																<img key={species} className={!isSpeciesLit(species) ? 'suggestor-dimmed-portrait' : ''}
-																	onClick={() => handleIconClick(species)} alt={species} title={species} src={SPECIES_ICONS[species]} width="30" height="30"/>
+																	onClick={() => selectInGrid(species)} alt={species} title={species} src={SPECIES_ICONS[species]} width="30" height="30"/>
 															))}
 														</div>
 													</td>
@@ -1790,17 +1767,7 @@
 																{s.type === 'service_building' ? (
 																	<span className="look-out-for-group look-out-for-service">
 																		<span className="look-out-label">One of </span>
-																		{(NEED_TO_SERVICE_BUILDINGS[s.need] || []).filter(bid => BUILDINGS[bid]).map(bid => (
-																			<img
-																				key={bid}
-																				className="service-building-icon"
-																				src={BUILDINGS[bid].icon}
-																				alt={BUILDINGS[bid].displayName}
-																				title={BUILDINGS[bid].displayName}
-																				width="24"
-																				height="24"
-																			/>
-																		))}
+																		<ServiceBuildingIcons need={s.need} />
 																	</span>
 																) : s.type === 'blueprint' ? (
 																	<span
@@ -1809,7 +1776,7 @@
 																	>
 																		<span className="look-out-label">Recipes for </span>
 																		{s.goods.filter(g => GOODS[g]).map(g => (
-																			<LookOutIcon key={g} good={g} hammer onClick={() => handleIconClick(g)} />
+																			<LookOutIcon key={g} good={g} hammer onClick={() => selectInGrid(g)} />
 																		))}
 																	</span>
 																) : (
@@ -1819,18 +1786,14 @@
 																		style={{ backgroundColor: s.colorAlpha }}
 																	>
 																		<span className="look-out-label">One of </span>
-																		{s.options.filter(ing => GOODS[ing]).map(ing => (
-																			<LookOutIcon key={ing} good={ing} onClick={() => handleIconClick(ing)}
-																				hammer={!isRawResource(ing) && !hasRecipeBuilding.includes(ing)}
-																				needs={getMissingSlots(ing, currentRawResources)} />
-																		))}
+																		<OptionIcons options={s.options} currentRawResources={currentRawResources} hasRecipeBuilding={hasRecipeBuilding} />
 																	</span>
 																)}
 															</div>
 														))}
 														{/* Phone cards show these instead of the ingredient chips and the lines above */}
 														{showCards && <SlotEntries need={need} currentRawResources={currentRawResources} hasRecipeBuilding={hasRecipeBuilding}
-															hasServiceBuilding={hasServiceBuilding} handleIconClick={handleIconClick} />}
+															hasServiceBuilding={hasServiceBuilding} />}
 													</td>
 												</tr>
 											))}
@@ -1858,7 +1821,7 @@
 														src={GOODS[good].icon_path}
 														alt={GOODS[good].displayName}
 														title={GOODS[good].displayName}
-														onClick={() => handleIconClick(good)}
+														onClick={() => selectInGrid(good)}
 														style={{ cursor: 'pointer' }}
 													/>
 												)}
@@ -1878,7 +1841,7 @@
 														src={GOODS[good].icon_path}
 														alt={GOODS[good].displayName}
 														title={GOODS[good].displayName}
-														onClick={() => handleIconClick(good)}
+														onClick={() => selectInGrid(good)}
 														style={{ cursor: 'pointer' }}
 													/>
 												)}
@@ -1998,19 +1961,6 @@
 
 				useEffect(() => saveState({ includeRuins, includeFlawless: undefined }), [includeRuins]);
 
-				// Toggle through the Species Needs grid so both stay in sync
-				const toggleSpecies = (name) => {
-					const gridIcon = document.getElementById(name);
-					if (gridIcon) gridIcon.click();
-				};
-
-				// As in the Buildings table: services select the good that meets them, and goods with
-				// no Ingredient Grid icon do nothing
-				const handleIconClick = (iconName) => {
-					const icon = document.getElementById(NEEDTRANS[iconName] || iconName);
-					if (icon) icon.click();
-				};
-
 				const ranked = FORMATTED_BUILDINGS
 					.filter(item => (includeRuins || !isCleansedRuin(item.building))
 						&& (hasLikedProduct(item, species) || workerBonusCount(item, species) > 0))
@@ -2031,7 +1981,7 @@
 								{Object.keys(SPECIES).map(s => (
 									<img key={s} src={SPECIES_ICONS[s]} alt={s} title={s}
 										className={`affinity-portrait${species.includes(s) ? ' affinity-active' : ''}`}
-										onClick={() => toggleSpecies(s)} />
+										onClick={() => selectInGrid(s)} />
 								))}
 								<button type="button"
 									aria-pressed={includeRuins}
@@ -2086,17 +2036,17 @@
 													{item.products.map((productItem, productIndex) => {
 														const likedBy = productLikedBy(productItem.name, species);
 														return (
-														  <div key={productIndex} className={`good-line${likedBy.length ? '' : ' unwanted'}`} onClick={() => handleIconClick(productItem.name)}><img alt={productItem.name} src={productItem.icon_path} width="30" height="30"/>{productItem.grade && <GradeBadge grade={productItem.grade} />}<span className="good-name"> {productItem.name}</span>{productItem.grade && <span className="grade" role="img" aria-label={gradeLabel(productItem.grade)}>{productItem.grade}</span>}
+														  <ProductLine key={productIndex} product={productItem} unwanted={likedBy.length === 0}>
 															{likedBy.length > 0 && <span className="need-portraits">{likedBy.map(s => (
 																<img key={s} src={SPECIES_ICONS[s]} alt={s} title={`${speciesPlural(s)} need this`} className="need-portrait"/>
 															))}</span>}
-														  </div>
+														  </ProductLine>
 														);
 													})}
 												</td>
 												<td>
 													{item.cost.map((costItem, costIndex) => (
-													  <div key={costIndex} className="good-line" onClick={() => handleIconClick(costItem.name)}><span className="good-amount">{costItem.amount}</span><img alt={costItem.name} src={costItem.icon_path} width="30" height="30"/><span className="good-name"> {costItem.name}</span></div>
+													  <CostLine key={costIndex} cost={costItem} />
 													))}
 												</td>
 											</tr>
