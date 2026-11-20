@@ -714,7 +714,7 @@
 				const initialActiveFilts = Array.isArray(savedTableState.buildingFilters)
 					? savedTableState.buildingFilters.filter(filter => ['Products', 'Costs'].includes(filter))
 					: ['Products'];
-				const [data, setData] = useState(FORMATTED_BUILDINGS);
+				const data = FORMATTED_BUILDINGS;
 				const [searchTerm, setSearchTerm] = useState(typeof savedTableState.buildingSearch === 'string' ? savedTableState.buildingSearch : '');
 				// Sorting: grouped by category (the default), or by building name. Older saved
 				// 'products' / 'cost' sorts fall back to the default.
@@ -977,43 +977,6 @@
 				);
 			};
 			
-			const ImageUploader = () => {
-				const [image, setImage] = useState(localStorage.getItem('uploadedImage') || null); // Load from localStorage
-
-				const handleImageUpload = (event) => {
-					const file = event.target.files[0];
-
-					if (file) {
-						const reader = new FileReader();
-
-						reader.onloadend = () => {
-							const base64String = reader.result;
-							setImage(base64String);
-							localStorage.setItem('uploadedImage', base64String); // Store in localStorage
-						};
-
-						reader.readAsDataURL(file);
-					}
-				};
-
-				const handleClearImage = () => {
-					setImage(null);
-					localStorage.removeItem('uploadedImage');
-				}
-
-				return (
-					<div>
-						<input type="file" accept="image/*" onChange={handleImageUpload} />
-						{image && (
-							<div>
-								<img src={image} alt="Uploaded Image" style={{ maxWidth: '200px', maxHeight: '200px' }} /> {/* Display image */}
-								<button onClick={handleClearImage}>Clear Image</button>
-							</div>
-						)}
-					</div>
-				);
-			};
-			
             // Overlapping Needs
             const OverlappingNeeds = () => {
 				// Dim like the Species Needs grid: species not selected, and needs none of the selected species have
@@ -1088,11 +1051,9 @@
 				'Drizzle Water', 'Clearance Water', 'Storm Water'
 			].sort(compareResources);
 
-			const INGREDIENT_GROUP_COLORS = ['#1e90ff', '#eb4d4b', '#f1f2f6'];
-			const INGREDIENT_GROUP_COLORS_ALPHA = ['#1e90ff66', '#eb4d4b66', '#f1f2f699'];
+			const INGREDIENT_GROUP_COLORS = ['#1e90ff66', '#eb4d4b66', '#f1f2f699'];
 			// Lighter tints for chips inside a branch, so a sub-recipe reads as part of its top-level slot
 			const INGREDIENT_GROUP_COLORS_NESTED = ['#1e90ff2e', '#eb4d4b2e', '#f1f2f633'];
-			const INGREDIENT_GROUP_NAMES = ['blue', 'red', 'gray'];
 
 			const isRawResource = (name) => RAW_RESOURCES.includes(name);
 
@@ -1212,27 +1173,27 @@
 				// coloured slot for those its chosen option needs
 				const blueprints = getBlueprintGroups(goodName, rawSet, hasRecipeBuilding);
 				if (blueprints.required.length > 0) {
-					suggestions.push({ type: 'blueprint', goods: blueprints.required, colorAlpha: null });
+					suggestions.push({ type: 'blueprint', goods: blueprints.required, color: null });
 				}
 				blueprints.bySlot.forEach((goods, i) => {
 					if (goods && goods.length > 0) {
-						suggestions.push({ type: 'blueprint', goods, colorAlpha: INGREDIENT_GROUP_COLORS_ALPHA[i] || INGREDIENT_GROUP_COLORS_ALPHA[0] });
+						suggestions.push({ type: 'blueprint', goods, color: INGREDIENT_GROUP_COLORS[i] || INGREDIENT_GROUP_COLORS[0] });
 					}
 				});
 				// A slot that can't be covered lists all its options (a trader can sell any of them). A slot whose
 				// only option is made (Flour) lists that good's own uncovered slots instead, in the paler tint.
-				const addSlotLines = (group, colorAlpha, nestedAlpha, seen) => {
+				const addSlotLines = (group, color, nestedColor, seen) => {
 					if (getFirstAvailableInGroup(group, rawSet)) return;
 					const only = group.length === 1 ? group[0] : null;
 					if (only && !isRawResource(only) && GOODS[only] && GOODS[only].ingredient_sets && !seen.has(only)) {
 						seen.add(only);
-						GOODS[only].ingredient_sets.forEach(sub => addSlotLines(sub, nestedAlpha, nestedAlpha, seen));
+						GOODS[only].ingredient_sets.forEach(sub => addSlotLines(sub, nestedColor, nestedColor, seen));
 						return;
 					}
-					suggestions.push({ type: 'slot', options: group, colorAlpha });
+					suggestions.push({ type: 'slot', options: group, color });
 				};
 				good.ingredient_sets.forEach((group, i) => addSlotLines(group,
-					INGREDIENT_GROUP_COLORS_ALPHA[i] || INGREDIENT_GROUP_COLORS_ALPHA[0],
+					INGREDIENT_GROUP_COLORS[i] || INGREDIENT_GROUP_COLORS[0],
 					INGREDIENT_GROUP_COLORS_NESTED[i] || INGREDIENT_GROUP_COLORS_NESTED[0],
 					new Set([goodName])));
 				return suggestions;
@@ -1506,7 +1467,7 @@
 							// The chip names its good; its badge counts and lists the alternatives
 							const tooltip = shown && GOODS[shown] && GOODS[shown].displayName;
 							const colorIndex = isTop ? i : slotColor;
-							const palette = isTop ? INGREDIENT_GROUP_COLORS_ALPHA : INGREDIENT_GROUP_COLORS_NESTED;
+							const palette = isTop ? INGREDIENT_GROUP_COLORS : INGREDIENT_GROUP_COLORS_NESTED;
 							const hasSubRecipe = shown && !isRawResource(shown) && !branchVisited.has(shown);
 							const foldable = isTop && satisfier && hasSubRecipe;
 							const foldKey = foldKeys[i];
@@ -1573,7 +1534,7 @@
 					);
 				}
 				good.ingredient_sets.forEach((group, i) => {
-					const color = INGREDIENT_GROUP_COLORS_ALPHA[i] || INGREDIENT_GROUP_COLORS_ALPHA[0];
+					const color = INGREDIENT_GROUP_COLORS[i] || INGREDIENT_GROUP_COLORS[0];
 					const satisfier = pickSlotIngredient(group, rawSet, hasRecipeBuilding, visited);
 					if (satisfier) {
 						entries.push(
@@ -1772,7 +1733,7 @@
 																) : s.type === 'blueprint' ? (
 																	<span
 																		className="look-out-for-group look-out-for-blueprint"
-																		style={s.colorAlpha ? { backgroundColor: s.colorAlpha } : undefined}
+																		style={s.color ? { backgroundColor: s.color } : undefined}
 																	>
 																		<span className="look-out-label">Recipes for </span>
 																		{s.goods.filter(g => GOODS[g]).map(g => (
@@ -1783,7 +1744,7 @@
 																	// type 'slot': the options for a slot that can't be covered, raw or made
 																	<span
 																		className="look-out-for-group"
-																		style={{ backgroundColor: s.colorAlpha }}
+																		style={{ backgroundColor: s.color }}
 																	>
 																		<span className="look-out-label">One of </span>
 																		<OptionIcons options={s.options} currentRawResources={currentRawResources} hasRecipeBuilding={hasRecipeBuilding} />

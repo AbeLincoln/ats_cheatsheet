@@ -236,26 +236,12 @@ div.content {
     border: 2px solid var(--ats-brown,dimgray);
 }
 
-caption, .mw-headline, h1.mw-first-heading, #mw-toc-heading, .mw-portlet-body .mw-list-item, .ats-infobox-header-title {
-    font-variant: small-caps;
-}
-
-p, td, th, li, dd, caption, .mw-headline, h1.mw-first-heading, .thumbcaption, .toc, .usermessage, .ats-infobox-header-title {
-    color: var(--ats-color-white,white);
-    font-family: var(--ats-font-body),sans-serif;
-    font-weight: 300;
-    font-size: 11pt;
-    line-height: 1.7em;
-    letter-spacing: 0.10em;
-    word-spacing: 0.06em;
-}
-
-a:active, a:hover, a:visited:hover, .toctogglelabel:hover {
+a:active, a:hover, a:visited:hover {
     color: var(--ats-bright-blue-brightest,lightblue);
     text-decoration: underline;
 }
 
-a, a:link, .toctogglelabel {
+a, a:link {
     color: var(--ats-bright-blue,deepskyblue);
 }
 
@@ -280,32 +266,6 @@ img {
 
 .container-block-item {
     margin: 10px;
-}
-
-/* Image Block */
-.image-upload-label {
-    display: inline-block;
-    padding: 5px 5px;
-    background-color: #081007;
-    cursor: pointer;
-    border-radius: 5px; /* Add rounded corners */
-    text-align: center; /* Center the text */
-	color: var(--ats-yellow, gold);
-    font-variant: small-caps;
-    font-family: var(--ats-font-heading), serif;
-    font-size: 12pt;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    line-height: 1.4em;
-	margin-bottom: 5px;
-}
-
-.image-block {
-    display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: center;     /* Center vertically */
-    flex-direction: column;  /* Arrange items in a column */
-    min-height: 200px; /* Ensure some minimum height */
 }
 
 /* Data Table */
@@ -947,39 +907,7 @@ div.best-buildings.ats-container {
     opacity: 0.85;
 }
 
-/* Icons */
-
-.ats-optional-ingredient-icon > a {
-    display: inline-block;
-    position: relative;
-    margin: 1px 5px 1px 5px;
-}
-
-.ats-optional-ingredient-icon > a:first-child::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    border-image-source: url(../img/FRAME_Swap_66x66.png);
-    border-image-slice: 35;
-    border-image-width: auto;
-    border-image-repeat: round;
-    border-image-outset: 7px;
-}
-
-.ats-optional-ingredient-icon img {
-    border-radius: 50%;
-}
-
-.header-row {
-    border-bottom: solid 4px var(--ats-color-brown-divider);
-    margin-bottom: 5px;
-    justify-content: center;
-}
-
-/* Recipe Table */
+/* Panels and text */
 
 div.ats-container {
     display: inline-block;
@@ -994,35 +922,11 @@ div.ats-container {
     min-width: 250px;
 }
 
-table.ats-table-recipe {
-    margin-top: 8px;
-}
-
-table.ats-table-recipe, table.ats-table-recipe th, table.ats-table-recipe td {
-    border: none;
-    background: none;
-}
-
-.ats-table-recipe {
-    border-collapse: separate;
-    border-spacing: 0px 12px;
-}
-
-table.ats-table-recipe caption {
-    margin-top: -2px;
-    margin-bottom: 2px;
-}
-
-.ats-table-recipe caption, dt {
-    color: var(--ats-yellow,gold);
-    font-size: 150%;
-}
-
-caption, .mw-headline, h1.mw-first-heading, #mw-toc-heading, .mw-portlet-body .mw-list-item, .ats-infobox-header-title {
+h1.mw-first-heading, .ats-infobox-header-title {
     font-variant: small-caps;
 }
 
-p, td, th, li, dd, caption, .mw-headline, h1.mw-first-heading, .thumbcaption, .toc, .usermessage, .ats-infobox-header-title {
+td, th, h1.mw-first-heading, .ats-infobox-header-title {
     color: var(--ats-color-white,white);
     font-family: var(--ats-font-body),sans-serif;
     font-weight: 300;
@@ -1032,7 +936,7 @@ p, td, th, li, dd, caption, .mw-headline, h1.mw-first-heading, .thumbcaption, .t
     word-spacing: 0.06em;
 }
 
-caption, dt, .ats-flavor-text, .ats-flavor-text p, .mw-headline, h1.mw-first-heading, #mw-toc-heading, .mw-portlet-body .mw-list-item, .ats-infobox-header-title {
+h1.mw-first-heading, .ats-infobox-header-title {
     font-family: var(--ats-font-heading),serif;
     font-size: 14pt;
     font-weight: 500;
@@ -1040,32 +944,12 @@ caption, dt, .ats-flavor-text, .ats-flavor-text p, .mw-headline, h1.mw-first-hea
     line-height: 1.4em;
 }
 
-table.ats-table-recipe th {
-    margin-top: 8px;
-    padding-top: 6px;
-}
-
-.ats-table-recipe th, .ats-table-recipe td {
-    font-family: var(--ats-font-condensed,sans-serif);
-    font-size: 10.5pt;
-    text-transform: uppercase;
-}
-
 th {
     color: var(--ats-color-white,white);
     font-weight: 400;
 }
 
-.ats-table-recipe > * > tr > td:first-of-type {
-    border-left: 2px ridge var(--ats-brown,dimgray);
-    padding-left: 12px;
-}
-
-td:has(> div.ats-building-icon) {
-    padding-right: 10px;
-}
-
-.ats-table-recipe .ats-building-icon img, .ats-table-recipe .ats-single-ingredient-icon img, .icon-row .ats-single-ingredient-icon img, .ats-table-recipe .ats-product-icon img {
+.icon-row .ats-single-ingredient-icon img {
     border-image-source: url(../img/FRAME_Tex_Square_Big_1.png);
     border-image-slice: 20;
     border-image-width: auto;
@@ -1075,36 +959,18 @@ td:has(> div.ats-building-icon) {
 }
 
 @container page (max-width: 747px) {
-    .ats-table-recipe .ats-building-icon img, .ats-table-recipe .ats-single-ingredient-icon img, .icon-row .ats-single-ingredient-icon img, .ats-table-recipe .ats-product-icon img {
+    .icon-row .ats-single-ingredient-icon img {
         border-image-slice: 5;
     }
 }
 
-.ats-building-icon img {
-    display: block;
-}
-
-.ats-table-recipe > * > tr > td {
-    border-top: 2px ridge var(--ats-brown,dimgray);
-    border-bottom: 2px ridge var(--ats-brown,dimgray);
-    border-right: none;
-    background-color: rgba(0,0,0,0.20);
-    padding: 4px 0 4px 0;
-}
-
-.content-table-scrollbar.inactive {
-    position: absolute;
-    top: -99999px;
-    bottom: unset;
-    left: -99999px;
-}
-
-.content-table-scrollbar.inactive {
-    overflow-x: scroll;
-    z-index: 1;
-}
-
 /* Icon Grid */
+
+.header-row {
+    border-bottom: solid 4px var(--ats-color-brown-divider);
+    margin-bottom: 5px;
+    justify-content: center;
+}
 
 .grid-header {
 	text-align: center;
@@ -1546,7 +1412,7 @@ h1.mw-first-heading {
     letter-spacing: 0.07em;
 }
 
-h1.mw-first-heading, .mw-headline, .tocnumber, #mw-toc-heading, #ca-nstab-user {
+h1.mw-first-heading {
     color: var(--ats-gold,palegoldenrod);
 }
 
@@ -1907,11 +1773,6 @@ table.data-table tr.suggestor-row-dimmed td img {
 .suggestor-table .look-out-for-item img.service-building-icon,
 .suggestor-table .slot-entries img.service-building-icon {
 	cursor: default;
-}
-
-.need-missing-count {
-	font-size: 0.9em;
-	opacity: 0.85;
 }
 
 /* Suggestor panel: raw resources | table | blueprints. The steps below go by the frame's width;
@@ -2624,10 +2485,6 @@ button.state-reset:hover {
 
 	.best-table .icon-with-score {
 		margin: 0 16px 0 0;
-	}
-
-	.best-table .icon-with-score img.building-icon {
-		margin: 0;
 	}
 
 	/* A smaller medallion, with an invisible margin so it is still about 40px to tap */
