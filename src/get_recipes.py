@@ -41,6 +41,18 @@ for workshop in workshops:
                 ings.append([ingredient['amount'], ingredient['name'].split(']')[-1].strip()])
             recipe_data[good_name][grade_id]['ingredients'].append(ings)
 
+# Fishing Huts make their own bait from a Pack of Crops
+with open('../data/FishingHuts.json') as file:
+    fishing_huts = json.load(file)
+
+for hut in fishing_huts:
+    bait_name = hut['bait']['name'].split(']')[-1].strip()
+    bait_ingredient = hut['baitIngredient']
+    recipe_data.setdefault(bait_name, {})['T0'] = {
+        'product': [hut['bait']['amount'], bait_name],
+        'ingredients': [[[bait_ingredient['amount'], bait_ingredient['name'].split(']')[-1].strip()]]],
+    }
+
 # Ingredient Sets
 good_ingredient_sets = {}
 for good in recipe_data:
