@@ -129,6 +129,7 @@
             // Parse the json string from the goods.json file that we loaded in the html head section
             const GOODS = JSON.parse(goods_data);
 			const BUILDINGS = JSON.parse(buildings_data);
+			const goodDisplayName = (id) => (GOODS[id] && GOODS[id].displayName) || id;
             // Grouped and ordered like the wiki's Complex Needs table (housing is not shown here)
             const NEED_GROUPS = [
                 { name: 'Complex Foods', needs: ['Jerky', 'Porridge', 'Skewers', 'Biscuits', 'Pie', 'Pickled Goods', 'Paste'] },
@@ -289,13 +290,13 @@
             // each liked product scores (species that want it) x (1 + recipe stars);
             // the base 1 means even a no-star recipe counts for fulfilling the need
             const affinityScore = (item, speciesList) => item.products.reduce((sum, p) => {
-                const liked = productLikedBy(p.name, speciesList).length;
+                const liked = productLikedBy(p.id, speciesList).length;
                 return sum + liked * (1 + gradeStars(p.grade));
             }, 0);
 
             // Whether any product fulfills a need of the given species
             const hasLikedProduct = (item, speciesList) =>
-                item.products.some(p => productLikedBy(p.name, speciesList).length > 0);
+                item.products.some(p => productLikedBy(p.id, speciesList).length > 0);
 
             const speciesPlural = (s) => s === 'Fox' ? 'Foxes' : `${s}s`;
 
@@ -336,7 +337,7 @@
             // A product in the Buildings tables: icon, name and grade, the whole line selecting it in the
             // grid. `children` follow the grade (Best Buildings adds who needs it); `unwanted` dims it.
             const ProductLine = ({ product, unwanted = false, children }) => (
-                <div className={`good-line${unwanted ? ' unwanted' : ''}`} onClick={() => selectInGrid(product.name)}>
+                <div className={`good-line${unwanted ? ' unwanted' : ''}`} onClick={() => selectInGrid(product.id)}>
                     <img alt={product.name} src={product.icon_path} width="30" height="30"/>
                     {product.grade && <GradeBadge grade={product.grade} />}
                     <span className="good-name"> {product.name}</span>
@@ -346,7 +347,7 @@
             );
             // A building cost: amount, icon and name, the whole line selecting the good in the grid
             const CostLine = ({ cost }) => (
-                <div className="good-line" onClick={() => selectInGrid(cost.name)}>
+                <div className="good-line" onClick={() => selectInGrid(cost.id)}>
                     <span className="good-amount">{cost.amount}</span>
                     <img alt={cost.name} src={cost.icon_path} width="30" height="30"/>
                     <span className="good-name"> {cost.name}</span>
@@ -419,7 +420,7 @@
                         if (n in NEEDTRANS) n = NEEDTRANS[n];
                         BUILDINGS[building]["recipes"][rec]["product"]["icon_path"] = GOODS[n]["icon_path"];
                         BUILDINGS[building]["recipes"][rec]["product"]["grade"] = BUILDINGS[building]["recipes"][rec]["grade"];
-                        products.push(BUILDINGS[building]["recipes"][rec]["product"]);
+                        products.push({ ...BUILDINGS[building]["recipes"][rec]["product"], id: n, name: goodDisplayName(n) });
                     }
 
                     // building costs
@@ -427,7 +428,7 @@
                     for (const req in BUILDINGS[building]["requiredGoods"]) {
                         var n = BUILDINGS[building]["requiredGoods"][req]["name"];
                         var reqGood = GOODS[n];
-                        cost.push({"amount": BUILDINGS[building]["requiredGoods"][req]["amount"], "icon_path": reqGood["icon_path"], "name": reqGood["displayName"]});
+                        cost.push({"amount": BUILDINGS[building]["requiredGoods"][req]["amount"], "icon_path": reqGood["icon_path"], "id": n, "name": reqGood["displayName"]});
                     }
 
                     formattedBuildings.push({
@@ -546,7 +547,7 @@
                                     style={{ borderTop: (isIconHighlighted(iconName) && activeElement && activeElement != iconName) ? '5px solid ' + getColor(iconName) : '5px solid rgba(0, 0, 0, 0)' }}
                                     id={iconName}
                                     >
-                                    <img src={GOODS[iconName]['icon_path']} alt={iconName} title={iconName} />
+                                    <img src={GOODS[iconName]['icon_path']} alt={goodDisplayName(iconName)} title={goodDisplayName(iconName)} />
                                     </div>
                                 ))
                             ))}
@@ -796,22 +797,25 @@
 					}
 
 					// Match against the item names in the columns that are switched on
-					const goodNames = [
-						...(activeFilts.includes('Products') ? item.products.map(product => product.name) : []),
-						...(activeFilts.includes('Costs') ? item.cost.map(cost => cost.name) : []),
-					].filter(Boolean).map(name => name.toLowerCase());
+					const goods = [
+						...(activeFilts.includes('Products') ? item.products : []),
+						...(activeFilts.includes('Costs') ? item.cost : []),
+					];
 					if (activeIngredient) {
 						if (activeFilts.length === 0) return true; // both columns off: the ingredient filters nothing
-						return goodNames.includes(activeIngredient.toLowerCase()); // whole name, so Fish doesn't match Fishing Bait
+						return goods.some(good => good.id === activeIngredient); // whole name, so Fish doesn't match Fishing Bait
 					}
+					// A search matches the in-game name or the key
 					const term = searchTerm.toLowerCase();
-					return [item.building.toLowerCase(), ...goodNames].some(name => name.includes(term));
+					return [item.building, ...goods.flatMap(good => [good.name, good.id])]
+						.some(name => name.toLowerCase().includes(term));
 				});
 
 				// Products / Building Cost headers become match toggles while a search or ingredient is
 				// active: they choose which columns the search or ingredient is matched against.
 				const matching = activeIngredient !== null || searchTerm !== '';
-				const matchTarget = activeIngredient || `"${searchTerm}"`;
+				const activeName = activeIngredient && goodDisplayName(activeIngredient);
+				const matchTarget = activeName || `"${searchTerm}"`;
 				const columnHeader = (filter, label, verb) => {
 					if (!matching) return label;
 					const on = activeFilts.includes(filter);
@@ -835,9 +839,9 @@
 							<div className="filter-chip-row">
 								<span className="ingredient-chip">
 									<img src={GOODS[activeIngredient].icon_path} alt="" />
-									<span className="ingredient-chip-name">{activeIngredient}</span>
+									<span className="ingredient-chip-name">{activeName}</span>
 									<button type="button" className="ingredient-chip-clear" onClick={() => selectInGrid(activeIngredient)}
-										title={`Stop filtering by ${activeIngredient}`} aria-label={`Stop filtering by ${activeIngredient}`}>✕</button>
+										title={`Stop filtering by ${activeName}`} aria-label={`Stop filtering by ${activeName}`}>✕</button>
 								</span>
 							</div>
 							:
@@ -1838,7 +1842,7 @@
 
 			// The products that count towards a building's score: who needs each, and its share
 			const scoreParts = (item, species) => item.products
-				.map(p => ({ p, liked: productLikedBy(p.name, species), mult: 1 + gradeStars(p.grade) }))
+				.map(p => ({ p, liked: productLikedBy(p.id, species), mult: 1 + gradeStars(p.grade) }))
 				.filter(x => x.liked.length > 0);
 
 			// Spoken version of the score tooltip, for screen readers
@@ -1995,7 +1999,7 @@
 												</td>
 												<td>
 													{item.products.map((productItem, productIndex) => {
-														const likedBy = productLikedBy(productItem.name, species);
+														const likedBy = productLikedBy(productItem.id, species);
 														return (
 														  <ProductLine key={productIndex} product={productItem} unwanted={likedBy.length === 0}>
 															{likedBy.length > 0 && <span className="need-portraits">{likedBy.map(s => (
