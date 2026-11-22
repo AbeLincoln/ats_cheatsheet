@@ -2,7 +2,7 @@
     {
         "baseTankCapacity": 50,
         "amountProduced": 2,
-        "productionTime": 15,
+        "productionTime": 10,
         "levels": [
             {
                 "requiredGoods": [],
@@ -85,7 +85,7 @@
         "id": "Water Extractor",
         "displayName": "Geyser Pump",
         "description": "Used to extract and pump infused rainwater through underground pipes to production buildings, where it can be used to increase productivity. Must be placed on an active geyser. Has a tank capacity of 50.",
-        "category": "Resource Gathering",
+        "category": "Resource Acquisition",
         "sizeX": 2,
         "sizeY": 2,
         "requiredGoods": [
@@ -103,6 +103,9 @@
         "movable": false,
         "initiallyEssential": true,
         "workplaces": 2,
+        "tags": [
+            "Rainwater"
+        ],
         "recipes": [
             {
                 "product": {
@@ -110,7 +113,7 @@
                     "amount": 2
                 },
                 "grade": "Grade3",
-                "productionTime": 15
+                "productionTime": 10
             },
             {
                 "product": {
@@ -118,7 +121,7 @@
                     "amount": 2
                 },
                 "grade": "Grade3",
-                "productionTime": 15
+                "productionTime": 10
             },
             {
                 "product": {
@@ -126,7 +129,7 @@
                     "amount": 2
                 },
                 "grade": "Grade3",
-                "productionTime": 15
+                "productionTime": 10
             }
         ]
     }

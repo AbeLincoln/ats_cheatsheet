@@ -33,13 +33,13 @@
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script crossorigin src="https://unpkg.com/@babel/standalone@7.29.7/babel.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/react-beautiful-dnd@13.1.1/dist/react-beautiful-dnd.min.js"></script>
-    <script type="text/javascript" src="js/goods.json?v=1.8-bats"></script>
-	<script type="text/javascript" src="js/buildings.json?v=1.8-bats"></script>
+    <script type="text/javascript" src="js/goods.json?v=wiki-nov-2026"></script>
+	<script type="text/javascript" src="js/buildings.json?v=wiki-nov-2026"></script>
 </head>
 <body>
     <div class="content">
         <h1 id="firstHeading" class="firstHeading mw-first-heading"><span class="mw-page-title-main">Against the Storm Cheatsheet</span> <a href="https://github.com/FrankRuis/ats_cheatsheet" target="_blank"><i class="fa-brands fa-github"></i></a></h1>
-		<div class="data-version">Game data: 1.10 · Updated July 2026</div>
+		<div class="data-version">Game data: 1.11.5 · Updated November 2026</div>
 
         <div class="container-block" id="block_1">
 
@@ -306,15 +306,13 @@
 
             // Category and building order from the wiki's List of Buildings.
             // https://wiki.hoodedhorse.com/Against_the_Storm/Buildings
-            // The Mine is listed under Resource Gathering, and the Blight Post under City Buildings before the services.
-            const CATEGORY_ORDER = ['Resource Gathering', 'Extraction Building', 'Food Production', 'Industry', 'Special Building', 'City Buildings'];
+            // The Mine is listed under Resource Acquisition, and the Blight Post under City Buildings before the services.
+            const CATEGORY_ORDER = ['Resource Acquisition', 'Food Production', 'Industry', 'City Buildings'];
             // Shorter button labels: "building" is implied in the Buildings table
             // On narrow screens two more shorten, dropping the word in .cat-label-extra (style.css)
             const CATEGORY_BUTTON_LABELS = {
-                'Resource Gathering': <><span className="cat-label-extra">Resource </span>Gathering</>,
-                'Extraction Building': 'Extraction',
+                'Resource Acquisition': <><span className="cat-label-extra">Resource </span>Gathering</>,
                 'Food Production': <>Food<span className="cat-label-extra"> Production</span></>,
-                'Special Building': 'Special',
                 'City Buildings': 'City',
             };
             const categoryButtonLabel = (category) => CATEGORY_BUTTON_LABELS[category] || category;
@@ -708,8 +706,9 @@
 				const per_cat = PER_CAT;
 				const [savedTableState] = useState(loadSavedState); // read once, for the initial values
 				const categoryNames = Object.keys(per_cat);
+				const renamedCats = {'Resource Gathering': 'Resource Acquisition', 'Extraction Building': 'Resource Acquisition'}; // older saved names
 				const savedCats = Array.isArray(savedTableState.activeCategories)
-					? savedTableState.activeCategories.filter(category => categoryNames.includes(category))
+					? [...new Set(savedTableState.activeCategories.map(category => renamedCats[category] || category))].filter(category => categoryNames.includes(category))
 					: [];
 				const initialActiveCats = savedCats.length ? savedCats : categoryNames; // none saved means all
 				const initialActiveFilts = Array.isArray(savedTableState.buildingFilters)
