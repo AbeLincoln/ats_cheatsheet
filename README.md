@@ -6,7 +6,7 @@
 
 A simple local interactive web app for against the storm, where you can see which resources require which ingredients to make, or which resources are used in which recipes, as well as all the (shared) needs for the species of your current game.
 
-Game data: **1.10**, updated July 2026. Interface selections are saved in the browser and restored on the next visit.
+Game data: **1.11.5**, updated November 2026. Interface selections are saved in the browser and restored on the next visit.
 
 Works locally in your web browser without any setup, just click the green `code` button at the top right of the repository and choose download as zip, unzip, and open `index.html`.
 If you download the files I'm currently pulling from CDNs in the `index.html` header and update it to point at the local version it should also work offline.
@@ -35,5 +35,27 @@ The code is quite ugly since I just wanted to quickly make something usable with
 - I collected the CSV files from the [official wiki template listing](https://hoodedhorse.com/wiki/Against_the_Storm/Special:AllPages?from=&to=&namespace=10) (all templates with `csv` in their name).
 	- Update: some CSV files are now outdated, more recent data seems to be available in the json files referenced in the [Module namespace](https://hoodedhorse.com/wiki/Against_the_Storm/Special:AllPages?from=&to=&namespace=828) on the Wiki.
 - The styling and images are all ripped from the official wiki as well.
+
+### Updating the game data
+`js/buildings.json` and `js/goods.json` are generated from the wiki's data pages, which come from the game developers. Don't edit them by hand: the next update would overwrite the change.
+
+1. Save each page below into `data/` under the name shown (open the link, then save the page; the `?action=raw` pages are the plain file).
+
+	| Save as | Wiki page |
+	|---|---|
+	| `Workshops.json` | [Module:WorkshopsData/Workshops.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:WorkshopsData/Workshops.json?action=raw) |
+	| `Farms.json` | [Module:FarmsData/Farms.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:FarmsData/Farms.json?action=raw) |
+	| `Institutions.json` | [Module:InstitutionsData/Institutions.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:InstitutionsData/Institutions.json?action=raw) |
+	| `Camps.json` | [Module:CampsData/Camps.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:CampsData/Camps.json?action=raw) |
+	| `GathererHuts.json` | [Module:GatheringData/GathererHuts.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:GatheringData/GathererHuts.json?action=raw) |
+	| `FishingHuts.json` | [Module:FishingData/FishingHuts.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:FishingData/FishingHuts.json?action=raw) |
+	| `RainCatchers.json` | [Module:RainCollectorsData/RainCatchers.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:RainCollectorsData/RainCatchers.json?action=raw) |
+	| `Extractors.json` | [Module:ExtractorsData/Extractors.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:ExtractorsData/Extractors.json?action=raw) |
+	| `Mines.json` | [Module:MinesData/Mines.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:MinesData/Mines.json?action=raw) |
+	| `Blight Posts.json` | [Module:BlightPostsData/Blight Posts.json](https://wiki.hoodedhorse.com/Against_the_Storm/Module:BlightPostsData/Blight%20Posts.json?action=raw) |
+	| `Goods.csv` | [Template:Goods_csv](https://wiki.hoodedhorse.com/Against_the_Storm/Template:Goods_csv?action=raw) (saved as is; the script reads the CSV out of the page) |
+
+2. From `src/`, run `py buildings.py`, then `py get_recipes.py` (needs pandas and numpy). `get_recipes.py` reads the recipes from the new `js/buildings.json`.
+3. Review the diff. `buildings.py` stops if the wiki adds a specialization tag it doesn't know; add it to `PROFICIENCY_TAGS` or `COMFORT_TAGS`. A new good shows up in the Ingredient Grid: leave it out with `SKIPPED_GOODS` in `get_recipes.py` if no building makes or uses it, or add its icon to `img/goods/`. A new building needs its icon in `img/buildings/`, named after its ID.
 - I already downloaded the images for cornerstones, with the intention to also highlight relevant cornerstones in the future.
 - I will likely add a list of buildings too, similar to [the recipe list on the wiki](https://hoodedhorse.com/wiki/Against_the_Storm/Copper_Bars#Product).

@@ -2,8 +2,62 @@
     {
         "recipes": [
             {
+                "id": "Bloodthirst",
+                "grade": "Grade1 - institution",
+                "servedNeed": "Brawling",
+                "goods": [
+                    {
+                        "name": "[Needs] Training Gear",
+                        "amount": 1
+                    }
+                ]
+            },
+            {
+                "id": "Education",
+                "grade": "Grade1 - institution",
+                "servedNeed": "Education",
+                "goods": [
+                    {
+                        "name": "[Needs] Scrolls",
+                        "amount": 1
+                    }
+                ]
+            }
+        ],
+        "id": "Academy",
+        "displayName": "Academy",
+        "description": "A place where villagers can fulfill their need for: Brawling,  Education. Passive effects: The Crown Chronicles.",
+        "category": "City Buildings",
+        "sizeX": 4,
+        "sizeY": 4,
+        "requiredGoods": [
+            {
+                "name": "[Mat Processed] Planks",
+                "amount": 20
+            },
+            {
+                "name": "[Mat Processed] Bricks",
+                "amount": 4
+            },
+            {
+                "name": "[Mat Processed] Fabric",
+                "amount": 8
+            }
+        ],
+        "constructionTime": 61,
+        "cityScore": 8,
+        "movable": false,
+        "initiallyEssential": false,
+        "workplaces": 3,
+        "tags": [
+            "FoxesCooperation"
+        ]
+    },
+    {
+        "recipes": [
+            {
                 "id": "Treatment",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Treatment",
                 "goods": [
                     {
@@ -37,13 +91,17 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "Rainwater",
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Bloodthirst",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Brawling",
                 "goods": [
                     {
@@ -77,13 +135,28 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "Warmth",
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
+                "id": "Treatment",
+                "grade": "Grade1 - institution",
+                "servedNeed": "Treatment",
+                "goods": [
+                    {
+                        "name": "[Needs] Tea",
+                        "amount": 1
+                    }
+                ]
+            },
+            {
                 "id": "Bloodthirst",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Brawling",
                 "goods": [
                     {
@@ -91,33 +164,22 @@
                         "amount": 1
                     }
                 ]
-            },
-            {
-                "id": "Education",
-                "gradeId": "Grade1",
-                "servedNeed": "Education",
-                "goods": [
-                    {
-                        "name": "[Needs] Scrolls",
-                        "amount": 1
-                    }
-                ]
             }
         ],
-        "id": "Explorers Lodge",
-        "displayName": "Explorers' Lodge",
-        "description": "A place where villagers can fulfill their need for: Brawling,  Education. Passive effects: The Crown Chronicles.",
+        "id": "Feast Hall",
+        "displayName": "Feast Hall",
+        "description": "A place where villagers can fulfill their need for: Treatment,  Brawling. Passive effects: Festive Mood.",
         "category": "City Buildings",
-        "sizeX": 3,
+        "sizeX": 4,
         "sizeY": 3,
         "requiredGoods": [
             {
                 "name": "[Mat Processed] Planks",
-                "amount": 20
+                "amount": 10
             },
             {
                 "name": "[Mat Processed] Bricks",
-                "amount": 4
+                "amount": 8
             },
             {
                 "name": "[Mat Processed] Fabric",
@@ -128,13 +190,16 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Bloodthirst",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Brawling",
                 "goods": [
                     {
@@ -145,7 +210,7 @@
             },
             {
                 "id": "Luxury",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Luxury",
                 "goods": [
                     {
@@ -175,13 +240,16 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Luxury",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Luxury",
                 "goods": [
                     {
@@ -192,7 +260,7 @@
             },
             {
                 "id": "Education",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Education",
                 "goods": [
                     {
@@ -222,13 +290,16 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Luxury",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Luxury",
                 "goods": [
                     {
@@ -239,7 +310,7 @@
             },
             {
                 "id": "Education",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Education",
                 "goods": [
                     {
@@ -251,7 +322,7 @@
         ],
         "id": "Holy Guild House",
         "displayName": "Holy Guild House",
-        "description": "A place where villagers can fulfill their need for:  Luxury,  Education. Has an additional effect. Passive effects: Guild House, The Guild's Welfare.",
+        "description": "An upgraded service building with an additional passive effect. Villagers can use it to fulfill their need for:  Luxury,  Education. Passive effects: Guild House, The Guild's Welfare.",
         "category": "City Buildings",
         "sizeX": 4,
         "sizeY": 3,
@@ -269,13 +340,16 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Leasiure",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Leisure",
                 "goods": [
                     {
@@ -286,7 +360,7 @@
             },
             {
                 "id": "Treatment",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Treatment",
                 "goods": [
                     {
@@ -298,7 +372,7 @@
         ],
         "id": "Holy Market",
         "displayName": "Holy Market",
-        "description": "A place where villagers can fulfill their need for:  Leisure,  Treatment. Has an additional effect. Passive effects: Ale and Hearty, Market Carts.",
+        "description": "An upgraded service building with an additional passive effect. Villagers can use it to fulfill their need for:  Leisure,  Treatment. Passive effects: Ale and Hearty, Market Carts.",
         "category": "City Buildings",
         "sizeX": 4,
         "sizeY": 4,
@@ -316,13 +390,16 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 2
+        "workplaces": 2,
+        "tags": [
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Religion",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Religion",
                 "goods": [
                     {
@@ -333,7 +410,7 @@
             },
             {
                 "id": "Education",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Education",
                 "goods": [
                     {
@@ -345,7 +422,7 @@
         ],
         "id": "Holy Temple",
         "displayName": "Holy Temple",
-        "description": "A place where villagers can fulfill their need for:  Religion,  Education. Has an additional effect. Passive effects: Sacrament of the Flame, Consecrated Scrolls.",
+        "description": "An upgraded service building with an additional passive effect. Villagers can use it to fulfill their need for:  Religion,  Education. Passive effects: Sacrament of the Flame, Consecrated Scrolls.",
         "category": "City Buildings",
         "sizeX": 3,
         "sizeY": 3,
@@ -367,13 +444,17 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "Warmth",
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Leasiure",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Leisure",
                 "goods": [
                     {
@@ -384,7 +465,7 @@
             },
             {
                 "id": "Treatment",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Treatment",
                 "goods": [
                     {
@@ -414,13 +495,16 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 2
+        "workplaces": 2,
+        "tags": [
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Religion",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Religion",
                 "goods": [
                     {
@@ -431,7 +515,7 @@
             },
             {
                 "id": "Leasiure",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Leisure",
                 "goods": [
                     {
@@ -457,13 +541,18 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "Warmth",
+            "Brewing",
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Leasiure",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Leisure",
                 "goods": [
                     {
@@ -474,7 +563,7 @@
             },
             {
                 "id": "Luxury",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Luxury",
                 "goods": [
                     {
@@ -508,13 +597,17 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "Brewing",
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Treatment",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Treatment",
                 "goods": [
                     {
@@ -525,7 +618,7 @@
             },
             {
                 "id": "Religion",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Religion",
                 "goods": [
                     {
@@ -559,13 +652,16 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "FoxesCooperation"
+        ]
     },
     {
         "recipes": [
             {
                 "id": "Religion",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Religion",
                 "goods": [
                     {
@@ -576,7 +672,7 @@
             },
             {
                 "id": "Education",
-                "gradeId": "Grade1",
+                "grade": "Grade1 - institution",
                 "servedNeed": "Education",
                 "goods": [
                     {
@@ -610,6 +706,10 @@
         "cityScore": 8,
         "movable": false,
         "initiallyEssential": false,
-        "workplaces": 3
+        "workplaces": 3,
+        "tags": [
+            "Warmth",
+            "FoxesCooperation"
+        ]
     }
 ]
