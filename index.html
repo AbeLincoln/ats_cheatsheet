@@ -403,6 +403,31 @@
             const resourceRank = rankIn(RESOURCE_ORDER);
             const compareResources = (a, b) => resourceRank(a) - resourceRank(b) || a.localeCompare(b);
 
+            // Ingredient Grid order: the wiki's resource groups, simple to complex, so each ingredient comes before what it makes.
+            // Goods not listed (e.g. newly added ones) go at the end.
+            const GRID_GROUPS = [
+                ['Drizzle Water', 'Clearance Water', 'Storm Water'],
+                ['Berries', 'Fish', 'Insects', 'Roots', 'Vegetables'],
+                ['Algae', 'Copper Ore', 'Grain', 'Plant Fibre', 'Salt', 'Scales', 'Stone'],
+                ['Herbs', 'Mushrooms', 'Clay', 'Reeds', 'Resin'],
+                ['Eggs', 'Meat', 'Leather'],
+                ['Wood', 'Sea Marrow', 'Coal', 'Oil'],
+                ['Planks', 'Bricks', 'Fabric'],
+                ['Flour', 'Dye', 'Copper Bar', 'Crystalized Dew'],
+                ['Pottery', 'Barrels', 'Waterskin'],
+                ['Pipe', 'Parts', 'Hearth Parts'],
+                ['Simple Tools', 'Blight Fuel'],
+                ['Biscuits', 'Jerky', 'Pickled Goods', 'Paste', 'Pie', 'Porridge', 'Skewers'],
+                ['Coats', 'Boots'],
+                ['Ale', 'Incense', 'Wine', 'Scrolls', 'Tea', 'Training Gear'],
+                ['Amber', 'Pack of Building Materials', 'Pack of Crops', 'Pack of Luxury Goods', 'Pack of Provisions', 'Pack of Trade Goods', 'Fishing Bait'],
+                ['Ancient Tablet', 'Thunderblight Shard'],
+            ];
+            const GRID_ORDER = [...GRID_GROUPS.flat().filter(name => name in GOODS), ...Object.keys(GOODS).filter(name => !GRID_GROUPS.flat().includes(name))];
+            // Tints shared by the Ingredient Grid and the Recipes widget: one colour per recipe slot, gold for what a good is used in
+            const RECIPE_SLOT_TINTS = ['#1e90ff55', '#eb4d4b55', '#f1f2f677'];
+            const USED_IN_TINT = '#e1aa4655';
+
             // --- Building table data, built once and shared ---
             const buildFormattedBuildings = () => {
                 const formattedBuildings = [];
@@ -452,110 +477,74 @@
             };
             const { formattedBuildings: FORMATTED_BUILDINGS, per_cat: PER_CAT } = buildFormattedBuildings();
 
+            // --- Recipes widget data: every building recipe by the good it makes, best rating first ---
+            const plainGoodName = (name) => name.split(']').pop().trim(); // "[Other] Fishing Bait" -> "Fishing Bait"
+            const buildRecipeIndex = () => {
+                const madeBy = {};
+                const baitFor = {};
+                const add = (building, recipe) => {
+                    if (!(recipe.product.name in GOODS)) return; // services such as Treatment
+                    (madeBy[recipe.product.name] = madeBy[recipe.product.name] || []).push({ building, recipe });
+                };
+                for (const id in BUILDINGS) {
+                    const building = BUILDINGS[id];
+                    (building.recipes || []).forEach(recipe => add(building, recipe));
+                    // Fishing Huts make their own bait, outside their recipe list
+                    if (building.bait && building.baitIngredient) {
+                        const bait = plainGoodName(building.bait.name);
+                        add(building, { product: { name: bait, amount: building.bait.amount }, grade: '',
+                            ingredients: [[{ name: plainGoodName(building.baitIngredient.name), amount: building.baitIngredient.amount }]] });
+                        (baitFor[bait] = baitFor[bait] || []).push(building);
+                    }
+                }
+                Object.values(madeBy).forEach(list => list.sort((a, b) => gradeStars(b.recipe.grade) - gradeStars(a.recipe.grade)));
+                return { madeBy, baitFor };
+            };
+            const RECIPE_INDEX = buildRecipeIndex();
+
             // Ingredients
-            const IngredientGrid = ({ rows, columns }) => {
+            const IngredientGrid = () => {
 				const savedIngredientState = loadSavedState();
 				const initialActiveElement = savedIngredientState.activeIngredient in GOODS ? savedIngredientState.activeIngredient : null;
-				const initialReverseIngredients = savedIngredientState.reverseIngredients === true;
-				const [highlightedSet, setHighlightedSet] = useState(initialActiveElement
-					? (initialReverseIngredients ? GOODS[initialActiveElement]['reverse_set'] : GOODS[initialActiveElement]['ingredient_sets'])
-					: null);
 				const [activeElement, setActiveElement] = useState(initialActiveElement);
-				const [reverseIngredients, setReverseIngredients] = useState(initialReverseIngredients);
 
+                // Clicking a good picks it; clicking the picked one clears it
                 const handleIconClick = (iconName) => {
-					const newHighlightedSet = reverseIngredients ? GOODS[iconName]['reverse_set'] : GOODS[iconName]['ingredient_sets'];
-					let newActiveElement = iconName;
-                    if (highlightedSet) {
-                        if (highlightedSet.includes(iconName) || activeElement === iconName) {
-                            setHighlightedSet(null);
-                            setActiveElement(null);
-							newActiveElement = null;
-                        } else {
-                            setHighlightedSet(newHighlightedSet);
-                            setActiveElement(iconName);
-                        }
-                    } else {
-                        setHighlightedSet(newHighlightedSet);
-                        setActiveElement(iconName);
-                    }
+					const newActiveElement = activeElement === iconName ? null : iconName;
+					setActiveElement(newActiveElement);
 					saveState({ activeIngredient: newActiveElement });
-					// Tell the Buildings table (it keeps its category filters)
+					// Tell the Buildings table (it keeps its category filters) and the Recipes widget
 					window.dispatchEvent(new CustomEvent('ingredientSelection', { detail: newActiveElement }));
                 };
 
-				const handleReverseChange = (event) => {
-					const checked = event.target.checked;
-					setReverseIngredients(checked);
-					saveState({ reverseIngredients: checked });
-					if (activeElement) {
-						setHighlightedSet(checked ? GOODS[activeElement]['reverse_set'] : GOODS[activeElement]['ingredient_sets']);
-					}
-				};
-
-                const isIconHighlighted = (iconName) => {
-                    if (!highlightedSet || !activeElement) return true;
-                    return highlightedSet.flat().includes(iconName) || activeElement === iconName;
-                };
-				
-				const isIconMainHighlighted = (iconName) => {
-					return activeElement === iconName;
-				};
-
-                const getColor = (iconName) => {
-                    // Assumes no ingredient occurs in multiple sets, and at most 3 sets (which is true at the time of writing this)
-                    var colors = ['#1e90ff', '#eb4d4b', '#f1f2f6'];
-                    if (!highlightedSet || activeElement === iconName || !isIconHighlighted(iconName)) return 'grey';
-                    for (let i = 0; i < highlightedSet.length; i++) {
-                        if (highlightedSet[i].includes(iconName)) return colors[i];
-                    }
-                    return 'grey';
-                };
-
-                // Generate grid layout from the GOODS keys
-                const goodsNames = Object.keys(GOODS);
-                const grid = [];
-                let index = 0;
-
-                for (let i = 0; i < rows; i++) {
-                    const row = [];
-                    for (let j = 0; j < columns && index < goodsNames.length; j++) {
-                    row.push(goodsNames[index]);
-                    index++;
-                    }
-                    grid.push(row);
-                }
+                // The picked good's tints: its recipe slots in the slot colours, the goods it is used in in gold
+                const picked = activeElement && GOODS[activeElement];
+                const slotOf = {};
+                if (picked) picked.ingredient_sets.forEach((set, i) => set.forEach(name => { slotOf[name] = i; }));
+                const usedIn = new Set(picked ? picked.reverse_set.flat() : []);
+                const tintOf = (iconName) => iconName in slotOf ? RECIPE_SLOT_TINTS[slotOf[iconName]] : usedIn.has(iconName) ? USED_IN_TINT : undefined;
+                const isIconLit = (iconName) => !picked || iconName === activeElement || iconName in slotOf || usedIn.has(iconName);
 
                 return (
                     <div className="ats-container icon-grid ingredient-grid">
                     <div className="grid-header ats-infobox-header-title">
                         {"Ingredient Grid"}
-                        <label className="switch tooltip">
-                            <span className="tooltiptext">Requires / Needed for</span>
-							<input type="checkbox" id="reverse-ingredients" checked={reverseIngredients} onChange={handleReverseChange} />
-                            <span className="slider slider-round"></span>
-                        </label>
                     </div>
                     <div className="icon-grid-wrapper">
                         <div className="icon-row">
-                            {grid.map((row, rowIndex) => (
-                                row.map((iconName) => (
-                                    <div
-                                    key={iconName}
-                                    className={`ats-single-ingredient-icon icon${isIconHighlighted(iconName) ? (isIconMainHighlighted(iconName) ? ' icon-active' : '') : ' icon-inactive'}`}
-                                    onClick={() => handleIconClick(iconName)}
-                                    style={{ borderTop: (isIconHighlighted(iconName) && activeElement && activeElement != iconName) ? '5px solid ' + getColor(iconName) : '5px solid rgba(0, 0, 0, 0)' }}
-                                    id={iconName}
-                                    >
-                                    <img src={GOODS[iconName]['icon_path']} alt={goodDisplayName(iconName)} title={goodDisplayName(iconName)} />
-                                    </div>
-                                ))
+                            {GRID_ORDER.map((iconName) => (
+                                <div
+                                key={iconName}
+                                className={`ats-single-ingredient-icon icon${iconName === activeElement ? ' icon-active' : ''}${isIconLit(iconName) ? '' : ' icon-inactive'}`}
+                                onClick={() => handleIconClick(iconName)}
+                                style={{ background: tintOf(iconName) }}
+                                id={iconName}
+                                >
+                                <img src={GOODS[iconName]['icon_path']} alt={goodDisplayName(iconName)} title={goodDisplayName(iconName)} />
+                                </div>
                             ))}
                         </div>
                     </div>
-                        <div className='grid-legend'>
-                            <span className='legend-text'>For recipes, pick one of each highlighted color group.</span>
-                        </div>
                     </div>
                 );
             };
@@ -673,7 +662,6 @@
                     id={iconName in SPECIES ? iconName : undefined}
                     onClick={() => { setHoveredIcon(null); handleIconClick(iconName); }}
                     {...hoverHandlers(iconName)}
-                    style={{ borderTop: '5px solid transparent' }}
                     >
                         <SpeciesRing style={getRingStyle(iconName)}>
                             <img src={SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
@@ -703,6 +691,147 @@
                 );
             };
 			
+			// Recipes widget pieces. A good is framed with its amount in the corner and its rating under it; clicking it picks it.
+			const RecipeGood = ({ name, amount, grade, picked, extraClass = '' }) => (
+				<span className={`recipe-good${name === picked ? ' picked' : ''}${extraClass}`}
+					title={`${amount ? amount + ' ' : ''}${goodDisplayName(name)}${grade ? ' ' + grade : ''}`} onClick={() => selectInGrid(name)}>
+					<img src={GOODS[name].icon_path} alt={goodDisplayName(name)} />
+					{amount ? <span className="recipe-amount">{amount}</span> : null}
+					{grade ? <GradeBadge grade={grade} /> : null}
+				</span>
+			);
+			// Buildings aren't clickable; the name shows on hover
+			const RecipeBuilding = ({ building, grade }) => (
+				<span className="recipe-building" title={`${building.displayName}${grade ? ' ' + grade : ''}`}>
+					<img src={building.icon} alt={building.displayName} />
+					{grade ? <GradeBadge grade={grade} /> : null}
+				</span>
+			);
+			// A recipe's slots, tinted like the grid and joined by "+". `fadeOthers` dims everything but the picked good.
+			const RecipeSlots = ({ sets, picked, fadeOthers = false }) => (
+				<span className="recipe-rhs">
+					{sets.map((set, i) => (
+						<React.Fragment key={i}>
+							{i > 0 && <span className="recipe-sign">+</span>}
+							<span className="recipe-slot" style={{ background: RECIPE_SLOT_TINTS[i] }}>
+								{set.map(item => <RecipeGood key={item.name} name={item.name} amount={item.amount} picked={picked}
+									extraClass={fadeOthers && item.name !== picked ? ' faded' : ''} />)}
+							</span>
+						</React.Fragment>
+					))}
+				</span>
+			);
+			const uniqueBy = (list, key) => list.filter((item, i) => list.findIndex(other => key(other) === key(item)) === i);
+			// A section heading with its buildings on the right, best rating first
+			const RecipeSection = ({ title, entries, children }) => (
+				<>
+					<h3 className="recipe-heading">
+						{title}
+						<span className="recipe-buildings">
+							{uniqueBy(entries, entry => entry.building).map((entry, i) => <RecipeBuilding key={i} building={entry.building} grade={entry.recipe.grade} />)}
+						</span>
+					</h3>
+					<div className="recipe-rows">{children}</div>
+				</>
+			);
+			// How a building without ingredients gets the good
+			const isFarmed = (recipe) => !!recipe.plantingTime;
+			const isMined = (recipe) => !!recipe.seekedResource && !/Wood/.test(recipe.seekedResource);
+			const isCollected = (recipe) => !recipe.plantingTime && !recipe.seekedResource && !recipe.seekedDeposits;
+			const GATHER_KINDS = [
+				['Gathered by', recipe => !isFarmed(recipe) && !isMined(recipe) && !isCollected(recipe)],
+				['Farmed by', isFarmed],
+				['Mined by', isMined],
+				['Collected by', isCollected],
+			];
+			const gatherTime = (recipe) => recipe.plantingTime ? `${recipe.plantingTime}s + ${recipe.harvestingTime}s`
+				: (recipe.gatheringTime || recipe.productionTime) ? `${recipe.gatheringTime || recipe.productionTime}s` : null;
+
+			// Recipes: how the picked good is gathered or made, and what it is used in. Follows the Ingredient Grid's pick.
+			const RecipesWidget = () => {
+				const [picked, setPicked] = useState(() => {
+					const saved = loadSavedState().activeIngredient;
+					return saved in GOODS ? saved : null;
+				});
+				useWindowEvent('ingredientSelection', (e) => setPicked(e.detail in GOODS ? e.detail : null));
+
+				const header = <div className="grid-header ats-infobox-header-title">{"Recipes"}</div>;
+				if (!picked) {
+					return <div className="ats-container recipes-widget">{header}<p className="recipe-note">Pick a good to see its recipes.</p></div>;
+				}
+
+				const all = RECIPE_INDEX.madeBy[picked] || [];
+				const crafted = all.filter(entry => entry.recipe.ingredients);
+				// Same rating means the same recipe, so each rating (and amount, for gathering) gets one row
+				const byRating = (list, withAmount) => uniqueBy(list, entry => entry.recipe.grade + (withAmount ? '|' + entry.recipe.product.amount : ''));
+				const usedIn = [...new Set(GOODS[picked].reverse_set.flat())].filter(name => name in GOODS)
+					.sort((a, b) => GRID_ORDER.indexOf(a) - GRID_ORDER.indexOf(b));
+				const huts = RECIPE_INDEX.baitFor[picked];
+
+				return (
+					<div className="ats-container recipes-widget">
+						{header}
+						<div className="recipe-title">
+							<img src={GOODS[picked].icon_path} alt="" />
+							{goodDisplayName(picked)}
+						</div>
+						{all.length === 0 && <p className="recipe-note">No building makes it.</p>}
+
+						{GATHER_KINDS.map(([title, test]) => {
+							const entries = all.filter(entry => !entry.recipe.ingredients && test(entry.recipe));
+							if (!entries.length) return null;
+							return (
+								<RecipeSection key={title} title={title} entries={entries}>
+									<div className="recipe-row">
+										{byRating(entries, true).map(({ recipe }, i) => (
+											<span key={i} className="recipe-yield">
+												<RecipeGood name={picked} amount={recipe.product.amount} grade={recipe.grade} picked={picked} />
+												{gatherTime(recipe) && <span className="recipe-time">{gatherTime(recipe)}</span>}
+											</span>
+										))}
+									</div>
+								</RecipeSection>
+							);
+						})}
+
+						{crafted.length > 0 &&
+							<RecipeSection title="Made by" entries={crafted}>
+								{byRating(crafted, false).map(({ recipe }, i) => (
+									<div key={i} className="recipe-row recipe-equation">
+										<RecipeGood name={picked} amount={recipe.product.amount} grade={recipe.grade} picked={picked} />
+										<span className="recipe-sign">=</span>
+										<RecipeSlots sets={recipe.ingredients} picked={picked} />
+										{recipe.productionTime && <span className="recipe-time recipe-time-end">{recipe.productionTime}s</span>}
+									</div>
+								))}
+							</RecipeSection>
+						}
+
+						<h3 className="recipe-heading">Used in</h3>
+						<div className="recipe-rows recipe-uses">
+							{/* Bait isn't an ingredient: Fishing Huts use it to double their catch */}
+							{huts &&
+								<div className="recipe-row">
+									{huts.map((building, i) => <RecipeBuilding key={i} building={building} />)}
+									<span className="recipe-note">
+										doubles the catch of {uniqueBy(huts.flatMap(building => (building.recipes || []).map(recipe => recipe.product.name)), name => name)
+											.filter(name => name in GOODS).map(goodDisplayName).join(', ').replace(/, ([^,]*)$/, ' and $1')}
+									</span>
+								</div>
+							}
+							{usedIn.map(product => (
+								<div key={product} className="recipe-row recipe-equation">
+									<RecipeGood name={product} picked={picked} extraClass=" used-in" />
+									<span className="recipe-sign">=</span>
+									<RecipeSlots sets={GOODS[product].ingredient_sets.map(set => set.map(name => ({ name })))} picked={picked} fadeOthers />
+								</div>
+							))}
+							{!huts && usedIn.length === 0 && <p className="recipe-note">Nothing. It is an end product.</p>}
+						</div>
+					</div>
+				);
+			};
+
 			// Buildings data table
 			const DataTable = () => {
 				const per_cat = PER_CAT;
@@ -912,71 +1041,79 @@
 			};
 
 			// Drag and drop
-			const DraggableContainer = () => {
-				const defaultItems = [
-					{ id: "ingredients", content: <IngredientGrid rows={9} columns={8} /> },
-					{ id: "needs", content: <NeedsGrid /> },
-				];
-				// Restore the saved order; widgets missing from it keep their default place at the end
-				const [items, setItems] = useState(() => {
-					const saved = loadSavedState().widgetOrder;
-					const savedOrder = Array.isArray(saved) ? saved.filter((id, i) => saved.indexOf(id) === i) : [];
-					return [
-						...savedOrder.map(id => defaultItems.find(item => item.id === id)).filter(Boolean),
-						...defaultItems.filter(item => !savedOrder.includes(item.id)),
-					];
+			// The upper half's widgets sit in two columns; each column is its own drop area
+			const DEFAULT_WIDGET_COLUMNS = [['ingredients'], ['needs', 'recipes']];
+			const WIDGET_IDS = DEFAULT_WIDGET_COLUMNS.flat();
+			// Saved columns, cleaned: unknown or repeated ids go, and a missing widget goes under the one before it in the
+			// default order. An older saved widgetOrder (one row of two) becomes one widget per column.
+			const savedWidgetColumns = () => {
+				const saved = loadSavedState();
+				let columns = DEFAULT_WIDGET_COLUMNS;
+				if (Array.isArray(saved.widgetColumns) && saved.widgetColumns.length === 2 && saved.widgetColumns.every(Array.isArray)) {
+					columns = saved.widgetColumns;
+				} else if (Array.isArray(saved.widgetOrder)) {
+					const order = saved.widgetOrder.filter((id, i) => WIDGET_IDS.includes(id) && saved.widgetOrder.indexOf(id) === i);
+					if (order.length === 2) columns = [[order[0]], [order[1]]];
+				}
+				const seen = new Set();
+				const cleaned = columns.map(column => column.filter(id => WIDGET_IDS.includes(id) && !seen.has(id) && seen.add(id)));
+				if (seen.size === 0) return DEFAULT_WIDGET_COLUMNS.map(column => [...column]);
+				WIDGET_IDS.forEach((id, i) => {
+					if (seen.has(id)) return;
+					const before = WIDGET_IDS[i - 1];
+					const column = cleaned.find(ids => ids.includes(before)) || cleaned[DEFAULT_WIDGET_COLUMNS.findIndex(ids => ids.includes(id))];
+					column.splice(column.includes(before) ? column.indexOf(before) + 1 : column.length, 0, id);
+					seen.add(id);
 				});
+				return cleaned;
+			};
 
-				// The two panels stack below a 1123px frame: a 1160px desktop window less Firefox's 17px
-				// scrollbar and the side margins, as the upper-half sizing in style.css expects
-				const direction = usePageNarrowerThan(1123) ? "vertical" : "horizontal";
+			const DraggableContainer = () => {
+				const widgets = { ingredients: <IngredientGrid />, needs: <NeedsGrid />, recipes: <RecipesWidget /> };
+				const [columns, setColumns] = useState(savedWidgetColumns);
+				const [dragging, setDragging] = useState(false);
 
 				const onDragEnd = (result) => {
-					if (!result.destination) return; // If dropped outside the list, do nothing
-
-					const newItems = Array.from(items);
-					const [movedItem] = newItems.splice(result.source.index, 1);
-					newItems.splice(result.destination.index, 0, movedItem);
-
-					setItems(newItems);
-					saveState({ widgetOrder: newItems.map(item => item.id) });
+					setDragging(false);
+					if (!result.destination) return; // If dropped outside the columns, do nothing
+					const from = Number(result.source.droppableId.split('-')[1]);
+					const to = Number(result.destination.droppableId.split('-')[1]);
+					const newColumns = columns.map(column => [...column]);
+					const [moved] = newColumns[from].splice(result.source.index, 1);
+					newColumns[to].splice(result.destination.index, 0, moved);
+					setColumns(newColumns);
+					saveState({ widgetColumns: newColumns });
 				};
 
 				return (
-					<DragDropContext onDragEnd={onDragEnd}>
-						<Droppable droppableId="droppable-container" direction={direction}>
-							{(provided) => (
-								<div 
-									className="container-block" 
-									{...provided.droppableProps} 
-									ref={provided.innerRef} 
-									style={{ 
-										display: "flex", 
-										flexDirection: direction === "horizontal" ? "row" : "column", 
-									}}
-								>
-									{items.map((item, index) => (
-										<Draggable key={item.id} draggableId={item.id} index={index}>
-											{(provided) => (
-												<div
-													ref={provided.innerRef}
-													{...provided.draggableProps}
-													{...provided.dragHandleProps}
-													className="container-block-item"
-													style={{ 
-														...provided.draggableProps.style, 
-														cursor: "grab", 
-													}}
-												>
-													{item.content}
-												</div>
-											)}
-										</Draggable>
-									))}
-									{provided.placeholder}
-								</div>
-							)}
-						</Droppable>
+					// Applied before the columns are measured, so an empty one has its drop area by then
+					<DragDropContext onBeforeCapture={() => ReactDOM.flushSync(() => setDragging(true))} onDragEnd={onDragEnd}>
+						<div className={`widget-columns${dragging ? ' dragging' : ''}`}>
+							{columns.map((column, c) => (
+								<Droppable key={c} droppableId={`column-${c}`}>
+									{(provided) => (
+										<div className={`widget-column${column.length ? '' : ' empty'}`} ref={provided.innerRef} {...provided.droppableProps}>
+											{column.map((id, index) => (
+												<Draggable key={id} draggableId={id} index={index}>
+													{(provided) => (
+														<div
+															ref={provided.innerRef}
+															{...provided.draggableProps}
+															{...provided.dragHandleProps}
+															className="container-block-item"
+															style={{ ...provided.draggableProps.style, cursor: "grab" }}
+														>
+															{widgets[id]}
+														</div>
+													)}
+												</Draggable>
+											))}
+											{provided.placeholder}
+										</div>
+									)}
+								</Droppable>
+							))}
+						</div>
 					</DragDropContext>
 				);
 			};
