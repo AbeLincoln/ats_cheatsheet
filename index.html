@@ -733,14 +733,14 @@
 				</>
 			);
 			// How a building without ingredients gets the good
-			const isFarmed = (recipe) => !!recipe.plantingTime;
-			const isMined = (recipe) => !!recipe.seekedResource && !/Wood/.test(recipe.seekedResource);
-			const isCollected = (recipe) => !recipe.plantingTime && !recipe.seekedResource && !recipe.seekedDeposits;
+			const isFarmed = ({ recipe }) => !!recipe.plantingTime;
+			const isMined = ({ building }) => building.id === 'Mine';
+			const isGathered = ({ recipe }) => !!(recipe.seekedResource || recipe.seekedDeposits);
 			const GATHER_KINDS = [
-				['Gathered by', recipe => !isFarmed(recipe) && !isMined(recipe) && !isCollected(recipe)],
+				['Gathered by', isGathered],
 				['Farmed by', isFarmed],
 				['Mined by', isMined],
-				['Collected by', isCollected],
+				['Collected by', entry => !isGathered(entry) && !isFarmed(entry) && !isMined(entry)],
 			];
 			const gatherTime = (recipe) => recipe.plantingTime ? `${recipe.plantingTime}s + ${recipe.harvestingTime}s`
 				: (recipe.gatheringTime || recipe.productionTime) ? `${recipe.gatheringTime || recipe.productionTime}s` : null;
@@ -776,7 +776,7 @@
 						{all.length === 0 && <p className="recipe-note">No building makes it.</p>}
 
 						{GATHER_KINDS.map(([title, test]) => {
-							const entries = all.filter(entry => !entry.recipe.ingredients && test(entry.recipe));
+							const entries = all.filter(entry => !entry.recipe.ingredients && test(entry));
 							if (!entries.length) return null;
 							return (
 								<RecipeSection key={title} title={title} entries={entries}>
