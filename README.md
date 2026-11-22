@@ -12,10 +12,15 @@ Works locally in your web browser without any setup, just click the green `code`
 If you download the files I'm currently pulling from CDNs in the `index.html` header and update it to point at the local version it should also work offline.
 
 ## Ingredient Grid
-- Click on any resource to see which ingredients are needed to make it.
-- Alternatively, enable the switch in the top right (before clicking) to see which other resources can be made with the selected ingredient.
-- The colors indicate sets of ingredients, where you can pick one ingredient per set for the recipe (e.g., in the screenshot above, you can make pickled goods with roots and pottery).
+- Click on any resource to see which ingredients are needed to make it, and which other resources it is used in. Click it again to clear it.
+- The colors indicate sets of ingredients, where you can pick one ingredient per set for the recipe (e.g., in the screenshot above, you can make pickled goods with roots and pottery). Resources it is used in have their own color.
 - The selected ingredient will filter the buildings table on buildings that can produce that ingredient.
+
+## Recipes
+- Shows how the selected resource is gathered, farmed, mined, collected or made, with the buildings, star ratings and ingredient sets (colored like the Ingredient Grid).
+- Lists the resources it is used in; click one to select it.
+
+The widgets can be dragged into two columns, which sit side by side when they fit. The layout is saved in the browser.
 
 ## Species Needs
 - Click on any of the species to enable them, click again to disable, select up to 4 species at a time (4 requires the Sacred Grove World Map modifier).

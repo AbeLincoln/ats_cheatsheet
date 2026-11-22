@@ -268,6 +268,33 @@ img {
     margin: 10px;
 }
 
+/* Upper half: two columns of widgets, each its own drop area; the second goes under the first when they don't fit */
+.widget-columns {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.widget-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.widget-column > .container-block-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* An empty column keeps room to drop into while dragging */
+.widget-columns.dragging .widget-column.empty {
+    min-width: 120px;
+    min-height: 120px;
+    margin: 10px;
+    outline: 2px dashed var(--ats-color-brown-divider);
+}
+
 /* Data Table */
 #SearchInput {
 	border: 0;
@@ -958,9 +985,20 @@ th {
     margin: 0 2px 0 2px;
 }
 
+/* Square cells in the Ingredient Grid, so the tints are even */
+.ingredient-grid .icon-row .ats-single-ingredient-icon img {
+    margin: 0;
+}
+
 @container page (max-width: 747px) {
     .icon-row .ats-single-ingredient-icon img {
         border-image-slice: 5;
+    }
+
+    /* A thinner frame that hugs the icon, so the tint around it shows */
+    .ingredient-grid .icon-row .ats-single-ingredient-icon img {
+        border-image-outset: 1px;
+        border-image-width: 3px;
     }
 }
 
@@ -997,13 +1035,13 @@ th {
 
 /* Upper half (Ingredient Grid and Species Needs) sizing: both panels use these sizes, and the
    steps below tighten them as the frame narrows. The page's frame-width steps are the phone
-   window width less 20px, but the three widest here (1358, 1338, 1185px) are for a desktop
+   window width less 20px, but the two widest here (1358, 1338px) are for a desktop
    window: less Firefox's 17px scrollbar and the wider side margins. */
 .needs-grid,
 .ingredient-grid {
     --icon-size: 50px;
-    --icon-padding: 10px;
-    --icon-gap: 5px;
+    --icon-padding: 13px;
+    --icon-gap: 2px;
     --panel-padding: 12px;
 }
 
@@ -1016,8 +1054,8 @@ th {
 
 .ingredient-grid {
     --ig-columns: 8;
-    /* One icon cell: image and its 2px side margins (the frame rule above), padding, gap */
-    --icon-cell: calc(var(--icon-size) + 4px + 2 * var(--icon-padding) + 2 * var(--icon-gap));
+    /* One icon cell: image, padding, gap */
+    --icon-cell: calc(var(--icon-size) + 2 * var(--icon-padding) + 2 * var(--icon-gap));
 }
 
 @container page (max-width: 1358px) {
@@ -1030,14 +1068,8 @@ th {
 @container page (max-width: 1338px) {
     .needs-grid,
     .ingredient-grid {
-        --icon-padding: 6px;
-        --icon-gap: 2px;
-    }
-}
-
-@container page (max-width: 1185px) {
-    .ingredient-grid .grid-legend {
-        display: none;
+        --icon-padding: 7px;
+        --icon-gap: 1px;
     }
 }
 
@@ -1045,7 +1077,7 @@ th {
     .needs-grid,
     .ingredient-grid {
         --icon-size: 30px;
-        --icon-padding: 3px;
+        --icon-padding: 4px;
         --ring-t: 3px;
     }
 }
@@ -1054,7 +1086,7 @@ th {
     .needs-grid,
     .ingredient-grid {
         --icon-size: 28px;
-        --icon-gap: 1px;
+        --icon-gap: 0px;
     }
 
     /* The panels' outer margins give up their room too */
@@ -1078,6 +1110,24 @@ div.ingredient-grid.ats-container {
 .ingredient-grid .icon {
     margin: var(--icon-gap);
     padding: var(--icon-padding);
+    border-radius: 4px;
+}
+
+/* The picked good: a gold frame on a layer above the icon's own frame, which reaches past the padding on phones */
+.ingredient-grid .icon.icon-active {
+    position: relative;
+    z-index: 1;
+    background: rgba(48, 37, 19, 0.85);
+}
+
+.ingredient-grid .icon.icon-active::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 2px solid #e1aa46;
+    border-radius: 5px;
+    box-shadow: 0 0 10px 3px rgba(225, 170, 70, 0.6);
+    pointer-events: none;
 }
 
 .ingredient-grid .icon img {
@@ -1113,6 +1163,250 @@ div.ats-container.needs-grid {
 
 .need-group + .need-group {
     border-top: 1px solid var(--ats-color-brown-divider);
+}
+
+/* Recipes widget: as wide as its column (Species Needs' width by default), never widening it */
+div.ats-container.recipes-widget {
+    display: block;
+    box-sizing: border-box;
+    align-self: stretch;
+    contain: inline-size;
+    /* Alone in a column there is no other widget to take the width from */
+    min-width: min(420px, 100vw - 40px);
+    max-width: none;
+    padding: 0 10px 10px;
+    text-align: left;
+    color: var(--ats-color-white, #dedede);
+    font-family: var(--ats-font-heading), serif;
+    font-variant: small-caps;
+    --chip: 26px;
+}
+
+.recipe-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+    font-size: 16pt;
+    color: #fff;
+}
+
+/* The picked good's own icon: framed and lit like it is in the rows below */
+.recipe-title img {
+    width: 32px;
+    height: 32px;
+    margin: 4px;
+    border: 4px solid transparent;
+    border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 2px;
+    box-shadow: 0 0 0 2px var(--ats-yellow), 0 0 8px 2px rgba(225, 170, 70, 0.6);
+}
+
+.recipe-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 4px;
+    margin: 10px 0 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid rgba(226, 205, 157, 0.3);
+    font: inherit;
+    font-size: 13pt;
+    color: var(--ats-bright-gold);
+}
+
+.recipe-buildings {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.recipe-note {
+    margin: 4px 0;
+    font-size: 12pt;
+    opacity: 0.8;
+}
+
+.recipe-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    padding: 5px 4px 10px;
+}
+
+.recipe-row:nth-child(odd) {
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.recipe-uses .recipe-row {
+    padding-bottom: 5px;
+}
+
+/* Wrapped ingredients stay to the right of the = sign */
+.recipe-equation {
+    flex-wrap: nowrap;
+}
+
+.recipe-rhs {
+    display: inline-flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    min-width: 0;
+}
+
+.recipe-sign {
+    font-size: 14pt;
+}
+
+.recipe-slot {
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px 4px;
+    border-radius: 4px;
+}
+
+.recipe-yield {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: 14px;
+}
+
+.recipe-time {
+    font-family: var(--ats-font-body), sans-serif;
+    font-variant: normal;
+    font-size: 11pt;
+    opacity: 0.85;
+}
+
+.recipe-time-end {
+    margin-left: auto;
+}
+
+/* Goods and buildings: framed icons like the Buildings cards, amount in the corner, star pill on top */
+.recipe-good,
+.recipe-building {
+    position: relative;
+    display: inline-flex;
+}
+
+.recipe-good {
+    cursor: pointer;
+}
+
+.recipe-good img,
+.recipe-building img {
+    display: block;
+    width: var(--chip);
+    height: var(--chip);
+    border: 4px solid transparent;
+    border-image: url(../img/FRAME_Tex_Square_Big_1.png) 7 fill / auto / 2px;
+}
+
+.recipe-good.picked img {
+    box-shadow: 0 0 0 2px var(--ats-yellow), 0 0 8px 2px rgba(225, 170, 70, 0.6);
+}
+
+/* Used in: the product on the grid's gold tint; the rest of its recipe fades like unrelated grid icons */
+.recipe-good.used-in {
+    padding: 3px 4px;
+    border-radius: 4px;
+    background: #e1aa4655;
+}
+
+.recipe-good.faded {
+    background: #22180f;
+}
+
+.recipe-good.faded img {
+    opacity: 0.2;
+}
+
+.recipe-building {
+    padding-top: 5px;
+}
+
+.recipe-building img {
+    --chip: 30px;
+}
+
+.recipe-amount {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 15px;
+    padding: 1px 3px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: rgba(8, 16, 7, 0.9);
+    color: #fff;
+    font: 10px/1.2 var(--ats-font-body), sans-serif;
+    text-align: center;
+    pointer-events: none;
+}
+
+.recipes-widget .grade-badge {
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    padding: 2px;
+    border-radius: 8px;
+    background: rgba(8, 16, 7, 0.9);
+    color: var(--ats-yellow);
+    font: 9px/1 var(--ats-font-body), sans-serif;
+    font-variant: normal;
+    letter-spacing: 0;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* A good's rating sits under it, clear of its amount */
+.recipes-widget .recipe-good .grade-badge {
+    top: auto;
+    bottom: -8px;
+}
+
+.recipes-widget .grade-badge-hollow {
+    opacity: 0.75;
+}
+
+@container page (max-width: 625px) {
+    div.ats-container.recipes-widget {
+        --chip: 22px;
+    }
+
+    .recipe-building img {
+        --chip: 24px;
+    }
+
+    .recipe-time {
+        font-size: 10pt;
+    }
+
+    /* Used in: the Suggestor cards' small slot icons */
+    .recipe-uses .recipe-good img {
+        width: 22px;
+        height: 22px;
+        border-width: 3px;
+        border-image-outset: 1px;
+    }
+
+    .recipe-uses .recipe-slot {
+        gap: 2px 3px;
+    }
+}
+
+@container page (max-width: 339px) {
+    /* The panels' outer margins are narrower here, so a Recipes widget alone in its column still lines up */
+    div.ats-container.recipes-widget {
+        min-width: calc(100vw - 28px);
+    }
 }
 
 /* Species Needs Overlap table: header and need rows share the same columns.
@@ -1414,104 +1708,6 @@ h1.mw-first-heading {
 
 h1.mw-first-heading {
     color: var(--ats-gold,palegoldenrod);
-}
-
-/* Slider checkbox */
-
-/* The switch - the box around the slider */
-.switch {
-    position: relative;
-    display: block;
-    width: 34px;
-    height: 20px;
-    float: inline-end;
-    margin-top: 6px;
-}
-
-/* Hide default HTML checkbox */
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-/* The slider */
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    -webkit-transition: .4s;
-    transition: .4s;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 13px;
-    width: 13px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    -webkit-transition: .4s;
-    transition: .4s;
-}
-
-input:checked + .slider {
-    background-color: var(--ats-yellow,gold);
-}
-
-input:focus + .slider {
-    box-shadow: 0 0 1px #2196F3;
-}
-
-input:checked + .slider:before {
-    -webkit-transform: translateX(13px);
-    -ms-transform: translateX(13px);
-    transform: translateX(13px);
-}
-
-.slider-round {
-    border-radius: 24px;
-}
-
-.slider-round:before {
-    border-radius: 50%;
-}
-
-/* Tooltip */
-
-.tooltip {
-    position: relative;
-    display: inline-block;
-}
-
-.tooltip .tooltiptext {
-    visibility: hidden;
-    width: 120px;
-    text-align: center;
-    font-size: 18px;
-
-    display: flex;
-    color: #b0b6b2;
-    font-weight: bold;
-    background-color: #081007;
-    border: 2.5px ridge #93775d;
-    padding: 15px;
-
-    position: absolute;
-    z-index: 1;
-    width: 250px;
-    bottom: 130%;
-    /* The switch sits at the header's right end, so its tooltip opens leftwards */
-    right: 0;
-}
-
-.tooltip:hover .tooltiptext {
-    visibility: visible;
 }
 
 /* Suggestor raw resources - match Buildings cost column style */
@@ -2173,27 +2369,6 @@ table.data-table tr.suggestor-row-dimmed td img {
 .suggestor-data-table td {
 	padding-left: 6px;
 	padding-right: 6px;
-}
-
-/* Legend */
-
-.grid-legend {
-    display: block;
-    margin: auto;
-    margin-left: -10px;
-    margin-right: -10px;
-    background-color: rgba(0,0,0,0.20);
-    padding: 5px 10px 15px 10px;
-    width: 100%;
-    max-width: 100%;
-    white-space: wrap;
-}
-
-.legend-text {
-    color: var(--ats-color-white, #dedede);
-    font-variant: small-caps;
-    font-size: 14pt;
-	font-family: var(--ats-font-heading),serif;
 }
 
 /* Font awesome icons */
