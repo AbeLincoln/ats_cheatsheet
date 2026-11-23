@@ -23,9 +23,10 @@ If you download the files I'm currently pulling from CDNs in the `index.html` he
 The widgets can be dragged into two columns, which sit side by side when they fit. The layout is saved in the browser.
 
 ## Species Needs
-- Click on any of the species to enable them, click again to disable, select up to 4 species at a time (4 requires the Sacred Grove World Map modifier).
-- Colored rings around the needs and species indicate which species require which needs.
-- Needs with multiple colors are shared by multiple selected species.
+- Click on any of the species to enable them, click again to disable. Select up to 4 species at a time (4 requires the Sacred Grove World Map modifier).
+- When a species is selected, its background color indicates which needs it requires.
+- If a need is shared by more than one selected species, its background color will be split among all of them.
+- The background color width for a need scales based on the number of selected species it satisfies.
 
 See also the needs info tab to see a reverse mapping of overlapping species for each need.
 

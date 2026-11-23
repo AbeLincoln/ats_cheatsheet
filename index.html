@@ -167,10 +167,11 @@
 				</span>
 			) : null;
 
-			// Species ring around each need in the Species Needs grid, styled after the in-game perk frame.
-			const SPECIES_RING_COLORS = ['var(--ats-color-purple-perk)', 'var(--ats-color-orange-perk)', 'var(--ats-color-green-perk)', 'var(--ats-color-blue-perk)'];
+			// Tint color behind each need in the Species Needs grid, using in-game perk colors.
+			const SPECIES_COLORS = ['var(--ats-color-purple-perk)', 'var(--ats-color-orange-perk)', 'var(--ats-color-green-perk)', 'var(--ats-color-blue-perk)'];
+			const TINT_ALPHA = 0.4; // the tint's opacity; its 1px edge is opaque
 
-			// Each selected species keeps its color until it is deselected; a newly selected one takes the lowest free color.
+			// Colors are assigned in list order, skipping colors that are already assigned to selected species.
 			const assignSpeciesColors = (selection, previous = {}) => {
 				const colors = {};
 				for (const name of selection) {
@@ -178,45 +179,35 @@
 					if (Number.isInteger(color) && color >= 0 && color < MAX_SPECIES && !Object.values(colors).includes(color)) colors[name] = color;
 				}
 				for (const name of selection) {
-					if (!(name in colors)) colors[name] = SPECIES_RING_COLORS.findIndex((_, i) => !Object.values(colors).includes(i));
+					if (!(name in colors)) colors[name] = SPECIES_COLORS.findIndex((_, i) => !Object.values(colors).includes(i));
 				}
 				return colors;
 			};
 
-			// Ring parts for 1-4 selected species, in reading order (left to right, then the bottom).
-			// Each part: [colored size, position, black outline size]. Outline sizes are measured on the
-			// outline box, which is 1px larger on every side. --ring-t is the ring thickness.
-			const SPECIES_RING_PARTS = {
-				1: [['100% 100%', 'left top', '100% 100%']],
-				2: [['calc(50% - 1px) 100%', 'left top', '50% 100%'],
-					['calc(50% - 1px) 100%', 'right top', '50% 100%']],
-				3: [['calc(50% - 1px) calc(100% - var(--ring-t) - 2px)', 'left top', '50% calc(100% - var(--ring-t) - 2px)'],
-					['calc(50% - 1px) calc(100% - var(--ring-t) - 2px)', 'right top', '50% calc(100% - var(--ring-t) - 2px)'],
-					['100% var(--ring-t)', 'left bottom', '100% calc(var(--ring-t) + 2px)']],
-				4: [['calc(50% - 1px) calc(50% - 1px)', 'left top', '50% 50%'],
-					['calc(50% - 1px) calc(50% - 1px)', 'right top', '50% 50%'],
-					['calc(50% - 1px) calc(50% - 1px)', 'left bottom', '50% 50%'],
-					['calc(50% - 1px) calc(50% - 1px)', 'right bottom', '50% 50%']],
+			// Tint wedges for 2-4 species, in reading order (left to right, then the bottom), in degrees clockwise from the top.
+			const NEED_WEDGES = {
+				2: [[180, 360], [0, 180]],
+				3: [[240, 360], [0, 120], [120, 240]],
+				4: [[270, 360], [0, 90], [180, 270], [90, 180]],
+			};
+			// Background tint reaches further for each species that wants the need.
+			const NEED_REACH = [0, 0.35, 0.6, 0.8, 1];
+			const NEED_BLEND = 6; // degrees each wedge blends into its neighbors
+
+			// colors: one color per species that wants the icon, in grid order, each drawn at the given opacity
+			const tintGradient = (colors, alpha) => {
+				const withAlpha = color => alpha === 1 ? color : `rgb(from ${color} r g b / ${alpha})`;
+				if (colors.length === 1) return `linear-gradient(${withAlpha(colors[0])}, ${withAlpha(colors[0])})`;
+				const wedges = NEED_WEDGES[colors.length].map(([from, to], i) => ({ from, to, color: withAlpha(colors[i]) })).sort((a, b) => a.from - b.from);
+				const seam = `color-mix(in srgb, ${wedges[0].color}, ${wedges[wedges.length - 1].color})`;
+				const stops = wedges.map(w => `${w.color} ${w.from + NEED_BLEND}deg ${w.to - NEED_BLEND}deg`).join(', ');
+				return `conic-gradient(${seam} 0deg, ${stops}, ${seam} 360deg)`;
 			};
 
-			// Wraps an icon so the ring can be drawn at the icon's own edge, inside its brown frame
-			const SpeciesRing = ({ style, children }) => (
-				<span className={`species-ring${style ? ' has-ring' : ''}`} style={style || undefined}>{children}</span>
-			);
-
-			// parts: one color (or null for an empty part) per selected species, in grid order
-			const speciesRingStyle = (parts) => {
-				const layout = SPECIES_RING_PARTS[parts.length];
-				if (!layout || parts.every(color => !color)) return null;
-				const shown = layout.filter((_, i) => parts[i]);
-				const colors = parts.filter(color => color);
-				return {
-					'--ring-img': colors.map(color => `linear-gradient(${color}, ${color})`).join(', '),
-					'--ring-size': shown.map(part => part[0]).join(', '),
-					'--ring-pos': shown.map(part => part[1]).join(', '),
-					'--ring-bk-img': colors.map(() => 'linear-gradient(#000, #000)').join(', '),
-					'--ring-bk-size': shown.map(part => part[2]).join(', '),
-				};
+			const speciesTintStyle = (colors, isSpecies) => colors.length === 0 ? null : {
+				'--need-tint': tintGradient(colors, TINT_ALPHA),
+				'--need-edge': tintGradient(colors, 1),
+				'--need-reach': isSpecies ? 1 : NEED_REACH[colors.length],
 			};
 
             const SPECIES_ICONS = {
@@ -565,20 +556,12 @@
 				const [activeSpecies, setActiveSpecies] = useState(initialActiveSpecies.length > 0 ? initialActiveSpecies : null);
 				window.currentSpeciesSelection = activeSpecies ? [...activeSpecies] : [];
 
-				// Selected species in grid order (left to right), which sets their place in the ring
-				const ringSpecies = activeSpecies ? Object.keys(SPECIES).filter(name => activeSpecies.includes(name)) : [];
+				// Tint color order is determined by the grid order of the selected species
+				const pickedInGridOrder = activeSpecies ? Object.keys(SPECIES).filter(name => activeSpecies.includes(name)) : [];
 				const wants = (species, iconName) => species === iconName || SPECIES[species].includes(iconName);
 
-				const getRingStyle = (iconName) => speciesRingStyle(ringSpecies.map(species =>
-					wants(species, iconName) ? SPECIES_RING_COLORS[speciesColors[species]] : null));
-
-				const getSharedNeedClass = (iconName) => {
-					const sharedCount = ringSpecies.filter(species => wants(species, iconName)).length;
-					if (sharedCount === 4) return ' need-shared-four'; // only Coats or Boots
-					if (sharedCount === 3) return ' need-shared-three';
-					if (sharedCount === 2) return ' need-shared-two';
-					return '';
-				};
+				const getTintStyle = (iconName) => speciesTintStyle(pickedInGridOrder.filter(species => wants(species, iconName))
+					.map(species => SPECIES_COLORS[speciesColors[species]]), iconName in SPECIES);
 
                 const handleIconClick = (iconName) => {
                     if (!(iconName in SPECIES)) {
@@ -652,18 +635,16 @@
                 };
 
                 // One icon, species or need. Species keep an id: the Best Buildings tab clicks them by id.
-                // getSharedNeedClass is always empty for a species, since only that species wants itself.
                 const renderIcon = (iconName) => (
                     <div
                     key={iconName}
-                    className={`ats-single-ingredient-icon icon${isIconShown(iconName) ? '' : ' icon-inactive'}${getSharedNeedClass(iconName)}`}
+                    className={`ats-single-ingredient-icon icon${isIconShown(iconName) ? '' : ' icon-inactive'}`}
                     id={iconName in SPECIES ? iconName : undefined}
+                    style={getTintStyle(iconName) || undefined}
                     onClick={() => { setHoveredIcon(null); handleIconClick(iconName); }}
                     {...hoverHandlers(iconName)}
                     >
-                        <SpeciesRing style={getRingStyle(iconName)}>
-                            <img src={SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
-                        </SpeciesRing>
+                        <img src={SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
                     </div>
                 );
 
