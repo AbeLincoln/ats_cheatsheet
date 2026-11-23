@@ -995,11 +995,6 @@ th {
         border-image-slice: 5;
     }
 
-    /* A thinner frame that hugs the icon, so the tint around it shows */
-    .ingredient-grid .icon-row .ats-single-ingredient-icon img {
-        border-image-outset: 1px;
-        border-image-width: 3px;
-    }
 }
 
 /* Icon Grid */
@@ -1071,12 +1066,13 @@ th {
         --icon-gap: 1px;
     }
 
-    /* Thinner icon frames in Species Needs, so they don't cover the tint */
+    /* Thinner icon frames in both grids, so they don't cover the tint */
     .needs-grid {
         --frame-outset: 1px;
     }
 
-    .needs-grid .icon-row .ats-single-ingredient-icon img {
+    .needs-grid .icon-row .ats-single-ingredient-icon img,
+    .ingredient-grid .icon-row .ats-single-ingredient-icon img {
         border-image-slice: 5;
         border-image-outset: 1px;
         border-image-width: 3px;
