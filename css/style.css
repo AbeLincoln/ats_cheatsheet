@@ -1046,10 +1046,9 @@ th {
 }
 
 .needs-grid {
-    --ring-margin: 2px;
-    --ring-t: 4px;    /* species ring thickness */
-    /* One icon cell: image, padding and species-ring margin on both sides, plus the gap around it */
-    --icon-cell: calc(var(--icon-size) + 2 * var(--icon-padding) + 2 * var(--ring-margin) + 2 * var(--icon-gap));
+    --frame-outset: 7px;    /* how far the icon frame reaches past the image */
+    /* One icon cell: image and padding on both sides, plus the gap around it */
+    --icon-cell: calc(var(--icon-size) + 2 * var(--icon-padding) + 2 * var(--icon-gap));
 }
 
 .ingredient-grid {
@@ -1071,6 +1070,17 @@ th {
         --icon-padding: 7px;
         --icon-gap: 1px;
     }
+
+    /* Thinner icon frames in Species Needs, so they don't cover the tint */
+    .needs-grid {
+        --frame-outset: 1px;
+    }
+
+    .needs-grid .icon-row .ats-single-ingredient-icon img {
+        border-image-slice: 5;
+        border-image-outset: 1px;
+        border-image-width: 3px;
+    }
 }
 
 @container page (max-width: 625px) {
@@ -1078,7 +1088,6 @@ th {
     .ingredient-grid {
         --icon-size: 30px;
         --icon-padding: 4px;
-        --ring-t: 3px;
     }
 }
 
@@ -1141,14 +1150,45 @@ div.ats-container.needs-grid {
 }
 
 .needs-grid .icon {
+    position: relative;
     margin: var(--icon-gap);
     padding: var(--icon-padding);
+    border-radius: 4px;
     transition: opacity 0.12s ease;    /* smooths the hover preview dimming */
 }
 
+/* Species tint behind each icon, set by speciesTintStyle() in index.html */
+.needs-grid .icon::before {
+    content: '';
+    position: absolute;
+    inset: calc((1 - var(--need-reach, 1)) * (var(--icon-padding) - var(--frame-outset)));
+    border-radius: 4px;
+    background: var(--need-tint, none);
+    pointer-events: none;
+}
+
+/* A 1px edge around the tint in the species' full colors, so it stands out from the background */
+.needs-grid .icon::after {
+    content: '';
+    position: absolute;
+    inset: calc((1 - var(--need-reach, 1)) * (var(--icon-padding) - var(--frame-outset)));
+    border-radius: 4px;
+    padding: 1px;
+    background: var(--need-edge, none);
+    -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none;
+}
+
 .needs-grid .icon img {
+    position: relative;    /* above the tint */
     width: var(--icon-size);
     height: var(--icon-size);
+}
+
+/* Square cells, as in the Ingredient Grid */
+.needs-grid .icon-row .ats-single-ingredient-icon img {
+    margin: 0;
 }
 
 /* Keep each full row (species, Complex Foods) on one line */
@@ -1511,84 +1551,6 @@ div.overlap-grid.ats-container {
 
 .icon-inactive {
     opacity: 0.2;
-}
-
-.need-shared-two img,
-.need-shared-three img,
-.need-shared-four img {
-	transition: box-shadow 0.2s ease;
-}
-
-.need-shared-two img {
-	box-shadow: 0 0 12px 5px rgba(226, 205, 157, 0.85);
-}
-
-.need-shared-three img {
-	box-shadow:
-		0 0 14px 5px rgba(226, 205, 157, 0.95),
-		0 0 26px 9px rgba(225, 170, 70, 0.50);
-}
-
-/* Only Coats or Boots can be wanted by 4 species (Sacred Grove) */
-.need-shared-four img {
-	box-shadow:
-		0 0 14px 6px rgba(255, 236, 190, 1),
-		0 0 28px 11px rgba(240, 175, 60, 0.75),
-		0 0 42px 16px rgba(225, 120, 40, 0.40);
-}
-
-/*
- * Species ring: which selected species want each need, styled after the in-game perk frame.
- * Drawn at the icon's edge, inside its brown frame, with a 1px black outline so it stands
- * out against busy icon art. The parts and colors come from speciesRingStyle() in index.html.
- */
-
-/* Default ring thickness for rings outside the Species Needs grid. It is set on the page root, not on
-   .species-ring, so the value .needs-grid sets for each screen mode still reaches its rings. */
-:root {
-	--ring-t: 4px;
-}
-
-.species-ring {
-	position: relative;
-	display: inline-flex;
-	margin: 0 var(--ring-margin, 2px);
-}
-
-.icon-row .ats-single-ingredient-icon .species-ring img {
-	margin: 0;
-}
-
-.species-ring.has-ring::before,
-.species-ring.has-ring::after {
-	content: '';
-	position: absolute;
-	z-index: 2;
-	box-sizing: border-box;
-	background-repeat: no-repeat;
-	pointer-events: none;
-	/* Keep only the ring: the whole box minus its content box */
-	-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-	-webkit-mask-composite: xor;
-	mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-}
-
-/* Colored ring, 1px outside the icon */
-.species-ring.has-ring::after {
-	inset: -1px;
-	padding: var(--ring-t);
-	background-image: var(--ring-img);
-	background-size: var(--ring-size);
-	background-position: var(--ring-pos);
-}
-
-/* Black outline: the same parts, 1px larger on every side */
-.species-ring.has-ring::before {
-	inset: -2px;
-	padding: calc(var(--ring-t) + 2px);
-	background-image: var(--ring-bk-img);
-	background-size: var(--ring-bk-size);
-	background-position: var(--ring-pos);
 }
 
 /* Sacred Grove warning, shown when exactly 4 species are selected */
