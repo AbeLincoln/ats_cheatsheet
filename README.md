@@ -27,8 +27,7 @@ The widgets can be dragged into two columns, which sit side by side when they fi
 - When a species is selected, its background color indicates which needs it requires.
 - If a need is shared by more than one selected species, its background color will be split among all of them.
 - The background color width for a need scales based on the number of selected species it satisfies.
-
-See also the needs info tab to see a reverse mapping of overlapping species for each need.
+- The button in the corner switches to an extended view, showing every need each species wants.
 
 ## Buildings
 - The buildings table contains all buildings that can produce items, and can be filtered on their category (as defined by the official wiki data) by clicking the buttons above the table.
