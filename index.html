@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Against the Storm Cheatsheet</title>
     <link rel="icon" href="img/ats.ico"/>
-	<link rel="stylesheet" href="css/style.css?v=july-2026">
+	<link rel="stylesheet" href="css/style.css?v=nov-2026">
     <script>
         // Browsers without container queries (Safari before 16, Firefox before 110) get the stylesheet's
         // @container page steps as window-width steps instead: on a phone the page frame is 20px narrower
@@ -73,7 +73,6 @@
 			// Selects a good or species in the upper half by clicking its icon. A service need
 			// (Religion) selects the good that meets it; a name with no icon does nothing.
 			const selectInGrid = (name) => {
-				if (name === "None") return;
 				const icon = document.getElementById(NEEDTRANS[name] || name);
 				if (icon) icon.click();
 			};
@@ -556,6 +555,11 @@
 				const [activeSpecies, setActiveSpecies] = useState(initialActiveSpecies.length > 0 ? initialActiveSpecies : null);
 				window.currentSpeciesSelection = activeSpecies ? [...activeSpecies] : [];
 
+				// Compact shows the needs grid; Extended shows every need each species wants, under its portrait
+				const [needsView, setNeedsView] = useState(savedNeedsState.needsView === 'extended' ? 'extended' : 'compact');
+				useEffect(() => saveState({ needsView }), [needsView]);
+				const nextView = needsView === 'compact' ? 'extended' : 'compact';
+
 				// Tint color order is determined by the grid order of the selected species
 				const pickedInGridOrder = activeSpecies ? Object.keys(SPECIES).filter(name => activeSpecies.includes(name)) : [];
 				const wants = (species, iconName) => species === iconName || SPECIES[species].includes(iconName);
@@ -648,22 +652,45 @@
                     </div>
                 );
 
+                // One Extended cell: the need if this species wants it, tinted and faded like the species. No id, so species ids stay unique.
+                const renderMatrixCell = (species, need) => {
+                    const wanted = SPECIES[species].includes(need);
+                    return (
+                        <div
+                        key={`${need}-${species}`}
+                        className={`ats-single-ingredient-icon icon need-matrix-cell${wanted ? '' : ' empty'}${isIconShown(species) ? '' : ' icon-inactive'}`}
+                        style={getTintStyle(species) || undefined}
+                        onClick={wanted ? () => handleIconClick(need) : undefined}
+                        >
+                            <img src={SPECIES_ICONS[need]} alt={wanted ? need : ''} title={wanted ? need : undefined} />
+                        </div>
+                    );
+                };
+
                 return (
                     <div className="ats-container icon-grid needs-grid" style={{ '--columns': NEEDS_GRID_COLUMNS }}>
                         <div className="grid-header ats-infobox-header-title">
                             {"Species Needs"}
                             <SacredGroveWarning count={activeSpecies ? activeSpecies.length : 0} />
+                            <button type="button" className="view-toggle hover-tip" data-tooltip={nextView === 'extended' ? 'Expand' : 'Collapse'}
+                                aria-label={nextView === 'extended' ? 'Expand' : 'Collapse'} onClick={() => setNeedsView(nextView)}>
+                                <i key={needsView} className={`fa-solid ${nextView === 'extended' ? 'fa-chevron-down' : 'fa-chevron-up'}`} aria-hidden="true"></i>
+                            </button>
                         </div>
                         <div className="icon-grid-wrapper">
                             <div className="icon-row header-row">
                                 {Object.keys(SPECIES).map(renderIcon)}
                             </div>
 
-                            {NEED_GROUPS.map(group => (
+                            {needsView === 'compact' ? NEED_GROUPS.map(group => (
                                 <div key={group.name} className='icon-row need-group' role='group' aria-label={group.name}>
                                     {group.needs.map(renderIcon)}
                                 </div>
-                            ))}
+                            )) : NEED_GROUPS.map((group, g) => group.needs.map((need, i) => (
+                                <div key={need} className={`icon-row need-matrix-row${g > 0 && i === 0 ? ' group-start' : ''}`}>
+                                    {Object.keys(SPECIES).map(species => renderMatrixCell(species, need))}
+                                </div>
+                            )))}
 
                         </div>
                     </div>
@@ -1097,68 +1124,6 @@
 					</DragDropContext>
 				);
 			};
-			
-            // Overlapping Needs
-            const OverlappingNeeds = () => {
-				// Dim like the Species Needs grid: species not selected, and needs none of the selected species have
-				const [selectedSpecies, setSelectedSpecies] = useState(window.currentSpeciesSelection || []);
-				useWindowEvent('speciesSelection', (e) => setSelectedSpecies(e.detail || []));
-				const isShown = (iconName) => {
-					if (selectedSpecies.length === 0 || iconName == "None") return true;
-					if (iconName in SPECIES) return selectedSpecies.includes(iconName);
-					return overlappingNeeds[iconName].some(species => selectedSpecies.includes(species));
-				};
-				const iconClass = (iconName, iconIndex) =>
-					`ats-single-ingredient-icon icon${iconIndex == 0 ? ' overlap-label' : ''}${isShown(iconName) ? '' : ' icon-inactive'}`;
-
-				// One row per need, grouped and ordered like the Species Needs grid
-				const speciesNames = Object.keys(SPECIES);
-				const headerRow = ["None", ...speciesNames];
-				const groups = NEED_GROUPS.map(group => ({
-					name: group.name,
-					rows: group.needs.filter(need => need in overlappingNeeds).map(need =>
-						[need, ...speciesNames.map(species => overlappingNeeds[need].includes(species) ? species : "None")]),
-				}));
-				return (
-				  <div className="ats-container icon-grid overlap-grid">
-					<div className="grid-header ats-infobox-header-title">
-					  {"Species Needs Overlap"}
-					  <SacredGroveWarning count={selectedSpecies.length} />
-					</div>
-					<div className="icon-grid-wrapper">
-						<div className={`icon-row header-row`} style={{marginBottom: "0"}}>
-						{headerRow.map((iconName, iconIndex) => (
-							<div
-							key={iconName}
-							className={iconClass(iconName, iconIndex)}
-							onClick={() => selectInGrid(iconName)}
-							>
-								<img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
-							</div>
-						))}
-						</div>
-
-					  {groups.map(group => (
-						<div key={group.name} className='overlap-group' role='group' aria-label={group.name}>
-						{group.rows.map(row => (
-						<div className='icon-row' key={row[0]}>
-						  {row.map((iconName, iconIndex) => (
-							<div
-							  key={iconIndex}
-							  className={iconClass(iconName, iconIndex)}
-							  onClick={() => selectInGrid(iconName)}
-							>
-							  <img style={iconName == "None" ? {visibility: "hidden"} : {}} src={iconName == "None" ? "data:," : SPECIES_ICONS[iconName]} alt={iconName} title={iconName} />
-							</div>
-						  ))}
-						</div>
-					  ))}
-						</div>
-					  ))}
-					</div>
-				  </div>
-				);
-            };
 			
 			ReactDOM.render(<DraggableContainer />, document.querySelector("#block_1"));
 			
@@ -2144,7 +2109,6 @@
 
 			const TABS = [
 				{ id: 'buildings-table', label: 'Buildings', content: <DataTable /> },
-				{ id: 'overlapping-needs', label: 'Needs Info', content: <OverlappingNeeds /> },
 				{ id: 'suggestor', label: 'Suggestor', content: <SuggestorContent /> },
 				{ id: 'best-buildings', label: 'Best Buildings', content: <BestBuildings /> },
 			];

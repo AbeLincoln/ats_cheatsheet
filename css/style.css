@@ -1201,6 +1201,78 @@ div.ats-container.needs-grid {
     border-top: 1px solid var(--ats-color-brown-divider);
 }
 
+/* Compact / Extended toggle at the right of the header bar */
+.needs-grid .grid-header {
+    position: relative;
+}
+
+.view-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;    /* its tooltip draws over the species row, like the Sacred Grove warning's */
+    width: 26px;
+    padding: 3px 6px;
+    border: 1px solid #7a5f2e;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    color: #b9a77e;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.view-toggle:hover {
+    background: #7a5f2e;
+    color: #fff3d6;
+}
+
+/* A block icon, so the text line doesn't add space under it */
+.view-toggle i,
+.view-toggle svg {
+    display: block;
+}
+
+/* Font Awesome draws the chevrons 1/16 of their size off center; move them back */
+.view-toggle .fa-chevron-down {
+    transform: translateY(-0.0625em);
+}
+
+.view-toggle .fa-chevron-up {
+    transform: translateY(0.0625em);
+}
+
+/* On phones the title makes room for the button, so the Sacred Grove warning doesn't run under it */
+@container page (max-width: 747px) {
+    .needs-grid .grid-header {
+        padding-right: 34px;
+    }
+}
+
+/* The page's tooltip, lined up with the button's right edge so it stays on screen */
+.view-toggle.hover-tip::after {
+    left: auto;
+    right: -1px;
+    transform: none;
+}
+
+/* Touch screens keep hover after a tap, which would leave the label showing */
+@media (hover: none) {
+    .view-toggle.hover-tip::after {
+        display: none;
+    }
+}
+
+/* Extended: a need the species doesn't want leaves its cell empty, keeping its size so columns line up */
+.need-matrix-cell.empty {
+    visibility: hidden;
+}
+
+.need-matrix-row.group-start {
+    margin-top: 6px;
+}
+
 /* Recipes widget: as wide as its column (Species Needs' width by default), never widening it */
 div.ats-container.recipes-widget {
     display: block;
@@ -1443,78 +1515,6 @@ div.ats-container.recipes-widget {
     div.ats-container.recipes-widget {
         min-width: calc(100vw - 28px);
     }
-}
-
-/* Species Needs Overlap table: header and need rows share the same columns.
-   Smaller icons on phones, like the Species Needs grid, so all 8 columns fit */
-div.overlap-grid.ats-container {
-	box-sizing: border-box;
-	max-width: 800px;
-}
-
-/* Desktop keeps a 740px minimum, giving way before it would overflow the page */
-@container page (min-width: 748px) {
-	div.overlap-grid.ats-container {
-		min-width: min(740px, 100vw - 50px);
-	}
-}
-
-@container page (max-width: 747px) {    /* phone: fits a 360px screen */
-	div.overlap-grid.ats-container {
-		padding: 0 6px;
-	}
-
-	.overlap-grid .icon {
-		margin: 1px;
-		padding: 4px;
-	}
-
-	.overlap-grid .overlap-label {
-		padding-right: 6px;
-	}
-
-	/* A 2px frame, inside the gap between these small cells */
-	.overlap-grid .icon-row .ats-single-ingredient-icon img {
-		border-image-width: 2px;
-		border-image-outset: 2px;
-	}
-}
-
-@container page (max-width: 339px) {    /* narrow phone: fits a 320px screen */
-	.overlap-grid .icon {
-		padding: 1px;
-	}
-
-	/* "Species Needs Overlap" stays on one line in the header bar */
-	.overlap-grid .grid-header {
-		letter-spacing: 0.05em;
-	}
-}
-
-.overlap-grid .icon-row {
-    flex-wrap: nowrap;
-    justify-content: center;
-}
-
-/* Same thin divider between need groups as the Species Needs grid */
-.overlap-group + .overlap-group {
-    border-top: 1px solid var(--ats-color-brown-divider);
-}
-
-.overlap-grid .overlap-label {
-    border-right: solid 4px var(--ats-color-brown-divider);
-    padding-right: 15px;
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-/* A dimmed need dims its icon only, so the divider beside it stays one unbroken line */
-.overlap-grid .overlap-label.icon-inactive {
-    opacity: 1;
-}
-
-.overlap-grid .overlap-label.icon-inactive img {
-    opacity: 0.2;
 }
 
 .icon {
