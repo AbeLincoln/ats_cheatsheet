@@ -118,18 +118,30 @@
 }
 
 body {
-    background-blend-mode: multiply;
     font-family: 'Noto Sans',sans-serif;
     color: #000000;
     background: #72777d;
     font-size: 0.95em;
     line-height: 1.5;
+    text-align: center;
+}
+
+/* The page background on its own fixed layer, so phones don't redraw it while scrolling */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100lvh;    /* the tallest the screen gets, so it doesn't resize as the address bar hides */
+    z-index: -1;
+    pointer-events: none;
+    background-color: #72777d;
+    background-blend-mode: multiply;
     background-image: url(../img/shade-right.png?9ba42),url(../img/shade-left.png?30070),url(../img/shade-bottom.png?ff4a7),url(../img/main_AtS_bg.jpg?0001a);
     background-repeat: repeat-y,repeat-y,repeat-x,no-repeat;
     background-position: right center,left center,center bottom,center center;
     background-size: auto,auto,auto,cover;
-    background-attachment: fixed;
-    text-align: center;
 }
 
 /* Side margins: 50px on wide screens, shrinking to 8px at 1210px before any layout has to change.
